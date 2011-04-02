@@ -1,0 +1,39 @@
+#! /bin/sh
+
+srcdir=`cd ${top_srcdir} ; pwd`/src
+tstdir=`pwd`
+
+cd ${top_builddir}
+cpx=${PWD}/src/complexity
+
+cat > ${TMPDIR:-/tmp}/.complexityrc <<- _EOF_
+	hist
+	score
+	thresh 0
+	_EOF_
+trap "rm -f ${TMPDIR:-/tmp}/.complexityrc" 0
+
+cd ${srcdir}
+find * -type f -name '*.c' | \
+     ${cpx} '-<' ${TMPDIR:-/tmp}/.complexityrc \
+     > ${tstdir}/complexity.out
+cd ${tstdir}
+
+set -e
+
+lc=`egrep '^Complexity (Scores|Histogram)$' complexity.out | \
+    wc -l`
+
+test $lc -eq 2 || {
+    echo "Could not find both titles in output" >&2
+    exit 1
+}
+
+lc=`egrep '^ +0 ' complexity.out | wc -l`
+test $lc -ge 5 || {
+    echo "did not find enough zero scoring procedures: " $lc >&2
+    exit 1
+}
+
+rm -f complexity.out
+exit 0

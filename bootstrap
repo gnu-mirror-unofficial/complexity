@@ -1,0 +1,114 @@
+#! /bin/sh
+
+## bootstrap -- bootstrapping script
+##
+## Time-stamp:      "2011-04-01 14:20:32 bkorb"
+##
+##  This file is part of Complexity.
+##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
+##
+## Complexity is free software: you can redistribute it and/or modify it
+## under the terms of the GNU General Public License as published by the
+## Free Software Foundation, either version 3 of the License, or
+## (at your option) any later version.
+##
+## Complexity is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+## See the GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License along
+## with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+typeset -r prog=$(basename "$0" .sh)
+typeset -r program=$(basename "$0")
+typeset -r progdir=$(\cd $(dirname "$0") && pwd -P)
+typeset -r progpid=$$
+
+die()
+{ 
+    echo "${prog} error:  $*" >&2
+    kill -TERM ${progpid}
+    exit 1
+}
+
+usage()
+{
+    test $# -gt 0 && {
+        exec >&2
+        echo "${prog} usage error:  $*"
+    }
+    echo "${usage_text}"
+    exit $#
+}
+
+initialize()
+{
+    set -e
+    trap 'die "failed: $_"' 0
+    cd ${progdir}
+    test -d .git && \
+        git clean -f -x -d .
+    chmod a+x tests/*.test
+}
+
+boot_src()
+{
+    cd src
+    test -f opts.c -a -f opts.h -a opts.c -nt opts.def || \
+        autogen opts.def
+
+    test -f char-types.h -a char-types.h -nt char-types.map || \
+        char-mapper char-types.map
+    cd ..
+    cp $(autoopts-config pkgdatadir)/liboptschk.m4 m4/.
+
+    # Trick automake into "allowing" us to use texinfo rules:
+    #
+    printf '\\input texinfo\n@setfilename complexity.info\n' \
+        > doc/complexity.texi
+}
+
+boot_gnulib()
+{
+    local opts='--symlink --import --macro-prefix=CX --libtool'
+    local glt=$(which gnulib-tool)
+    test -f "${glt}" || {
+        glt=$(echo ~gnu/proj/gnulib)/gnulib-tool
+        test -f "${glt}" || die "Please put gnulib into PATH"
+    }
+    gvg=${glt%/gnulib-tool}/build-aux/git-version-gen
+    test -f .sdir && {
+        cd $(<.sdir)
+        ${gvg} XXX > $OLDPWD/.tarball-version
+        cd -
+    }
+    local modules='close malloc-posix stdbool snprintf git-version-gen fdl'
+    ${glt} ${opts} ${modules}
+}
+
+auto_tool()
+{
+    local makefiles=$(echo $(find * -type f -name 'Makefile.am') | \
+        sed 's/\.am//g')
+    sed "/AC_CONFIG_FILES.*Makefile/s@Makefile.*@${makefiles}\])@" \
+        configure.ac > XX$$
+    if cmp -s XX$$ configure.ac
+    then rm -f XX$$
+    else mv -f XX$$ configure.ac
+    fi
+
+    autoreconf --force --install --verbose --symlink
+
+    # automake is done.  Remove garbage file
+    #
+    rm -f doc/complexity.texi
+}
+
+initialize
+boot_gnulib
+boot_src
+auto_tool
+
+trap '' 0
+exit 0

@@ -1,0 +1,401 @@
+
+/*  -*- Mode: conf -*-
+ *  Time-stamp:        "2011-04-02 14:27:37 bkorb"
+ *
+ *  This file is part of Complexity.
+ *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
+ *
+ *  Complexity is free software: you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Complexity is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ *  See the GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+AutoGen Definitions options;
+
+argument    = "[ <file-name> ... ]";
+prog-name   = complexity;
+prog-title  = "Measure the Complexity of C source";
+package     = 'Complexity';
+
+explain     = <<- _EOF_
+	Compute the complexity of source code not just with a
+	path-through-the-code count, but also amplifying line counts
+	by logic level nesting.
+	_EOF_;
+
+copyright   = {
+    date    = "2011";
+    owner   = "Bruce Korb";
+    eaddr   = "bkorb@gnu.org";
+    type    = gpl;
+};
+
+version     = `
+ ver_file=${top_srcdir}/.tarball-version
+ if test -f ${ver_file}
+ then cat ${ver_file}
+ else echo 0.0
+ fi`;
+
+long-opts;
+environrc;
+rcfile      = '.complexityrc';
+homerc      = '$@/complex.conf', '$HOME', '$PROJECT_ROOT/complex.conf', '.';
+
+explain = <<- _EOExplanation_
+	Compute the complexity of code by counting lines of non-comment source
+	and multiplying by a nested logic weight factor.  By default, 2.0.
+	_EOExplanation_;
+
+export = <<- _EOExport_
+	#define DEFAULT_PENALTY       2.0
+	typedef double  score_t;
+	extern  score_t penalty;
+
+	#include "complexity.h"
+        extern  FILE *  trace_fp;
+	extern  int     score_ct;
+	_EOExport_;
+
+include = "score_t penalty  = DEFAULT_PENALTY;\n"
+          "FILE *  trace_fp = NULL;\n"
+          "int     score_ct = 0;\n";
+
+main = {
+    main-type    = for-each;
+    handler-proc = complex_eval;
+    handler-type = name;
+    main-init    = '    initialize(argc, argv);';
+    main-fini    = <<- _EOFini_
+	    if (score_ct == 0) {
+	        printf("No procedures were scored\n");
+	        exit(res | COMPLEXITY_EXIT_NO_DATA);
+	    }
+	    do_summary(res);
+	_EOFini_;
+};
+
+flag = {
+    name        = threshold;
+    value       = t;
+    arg-type    = number;
+    arg-default = 30;
+    arg-name    = minimum;
+    settable;
+    descrip     = "Reporting threshold";
+
+    doc = <<- _EODoc_
+	Ignore any procedures with a complexity measure below this threshold.
+	By default, a complexity score of under 30 is not printed.
+	However, if a histogram and statistics are to be printed, but
+	not individual procedure scores, then the default is set to zero.
+	Procedures below this limit are not counted in the statistics.
+	_EODoc_;
+};
+
+flag = {
+    name        = horrid-threshold;
+    arg-type    = number;
+    arg-default = 100;
+    arg-name    = minimum;
+    settable;
+    descrip     = "zero exit threshold";
+
+    doc = <<- _EODoc_
+	If any procedures score higher than this threshold, then the
+	program will exit non-zero.  (@code{4/COMPLEX_EXIT_HORRID_FUNCTION},
+	if no other problems are encountered.)
+	_EODoc_;
+};
+
+flag = {
+    name        = nesting-penalty;
+    value       = n;
+    arg-type    = string;
+    arg-name    = factor;
+    descrip     = "score multiplier for nested code";
+
+    doc = <<- _EODoc_
+	Linguistic constructs weigh more heavily the more deeply nested they
+	are.  By default, each layer penalizes by a factor of 2.0.  The option
+	argument is a floating point number.  The penalty may be 1, but not less.
+	_EODoc_;
+};
+
+flag = {
+    name        = demi-nesting-penalty;
+    arg-type    = string;
+    arg-name    = factor;
+    descrip     = "score multiplier for nested expressions";
+
+    doc = <<- _EODoc_
+	By default, this value is halfway between 1.0 and the nesting penalty
+	(specifically, the square root of the nesting penalty).
+	It refers to a parenthesized sub-expression. e.g.
+	@example
+	((a > b) && (c > d))
+	@end example
+	contains two parenthesized sub-expressions.  This would count 3.5 points.
+	On the other hand, this:
+	@example
+	(a > b && c > d)
+	@end example
+	contains two relation operators and a logical operator at the same level.
+	These nested counts will be multiplied together and yield
+	@code{2.5 * 2.5}, or @code{6.25}.  Don't do that.  It gets even worse
+	if you have logical ands and ors at the same level.
+	_EODoc_; //'
+};
+
+flag = {
+    name        = scale;
+    value       = s;
+    arg-type    = number;
+    arg-default = 20;
+    arg-name    = factor;
+    descrip     = "complexity scaling factor";
+
+    doc = <<- _EODoc_
+	By default, the score is 20 which was normalized to roughly correspond
+	to the McCabe scaling:
+
+	@table @samp
+	@item 0-9
+	Easily maintained code.
+	@item 10-19
+	Maintained with little trouble.
+	@item 20-29
+	Maintained with some effort.
+	@item 30-39
+	Difficult to maintain code.
+	@item 40-49
+	Hard to maintain code.
+	@item 50-99
+	Unmaintainable code.
+	@item 100-199
+	Crazy making difficult code.
+	@item 200+
+	I only wish I were kidding.
+	@example
+	Score | ln-ct | nc-lns| file-name(line): proc-name
+	 4707    3815    2838   lib/vasnprintf.c(1747): VASNPRINTF
+	@end example
+	@end table
+	_EODoc_;
+};
+
+flag = {
+    name        = histogram;
+    value       = h;
+    descrip     = "Display histogram of complexity numbers";
+    no-preset;
+    disable     = no;
+
+    doc = <<- _EODoc_
+	Instead of printing out each function's score, a summary is printed
+	at the end showing how many functions had particular ranges of scores.
+	Unless @code{--scores} is specifically called out, the scores will not
+	print with this option specified.  The minimum scoring threshold will
+	also be reduced to zero (0), unless @code{--threshold} is specified.
+	_EODoc_; //'
+};
+
+flag = {
+    name        = scores;
+    value       = c;
+    descrip     = "Display the score for each procedure";
+    disable     = no;
+    no-preset;
+    settable;
+
+    doc = <<- _EODoc_
+	If you specify @code{--histogram}, individual scores will not be
+	displayed without this option.
+	_EODoc_;
+};
+
+flag = {
+    name        = ignore;
+    value       = I;
+    descrip     = "procedure name to be ignored";
+    arg-type    = string;
+    max         = NOLIMIT;
+
+    doc = <<- _EODoc_
+	Some code has macros defined that confuse the lexical analysis.
+	This will cause them to be ignored.  Other ways to cause functions
+	to be ignored are:
+	@enumerate
+	@item
+	Use K&R syntax for a procedure header.
+	@item
+	Use a preprocessing macro to assemble the procedure header.
+	@end enumerate
+	Generally speaking, anything you do that alters normal C syntax will
+	confuse the lexical analysis.  If a procedure is not seen, then it
+	will not get counted.  If code within a procedure is incomprehensible,
+	you will likely get inappropriate results.
+	_EODoc_;
+};
+
+flag = {
+    name        = no-header;
+    value       = H;
+    descrip     = "do not print scoring header";
+    no-preset;
+
+    doc = <<- _EODoc_
+	If a script is going to process the scoring output, parsing is easier
+	without a header.  The histogram output will always have a header.
+	_EODoc_;
+};
+
+flag = {
+    name        = unifdef;
+    value       = u;
+    descrip     = "Run the source(s) through unifdef(1BSD)";
+    arg-type    = string;
+    arg-name    = unifdef-opt;
+    max         = NOLIMIT;
+    stack-arg;
+
+    doc = <<- _EODoc_
+	Strip out sections of code surrounded by @code{#if/#endif} directives.
+	The option argument is passed as an argument to the @file{unifdef(1BSD)}
+	program.  For example:
+	@example
+	@i{complexity} -u-Dsymbol
+	@end example
+	@noindent
+	would cause @code{symbol} to be defined and remove sections of code
+	preceded by @code{#ifndef symbol} directives.
+
+	Please see the @file{unifdef} documentation for more information.
+	_EODoc_;
+};
+
+flag = {
+    name        = unif-exe;
+    descrip     = "Specify the unifdef program";
+    arg-type    = string;
+    arg-name    = prog;
+
+    doc = <<- _EODoc_
+	Alternate program to use for unifdef-ing the input.
+	_EODoc_;
+};
+
+flag = {
+    name        = input;
+    value       = i;
+    descrip     = "file of file list";
+    arg-type    = string;
+    arg-name    = file-name;
+    flag-code   = <<- _EOCode_
+	    FILE * fp = freopen(pOptDesc->optArg.argString, "r", stdin);
+	    if (fp != stdin) {
+	        fprintf(stderr, "fs error %d (%s) reopening %s as stdin\n",
+	                errno, strerror(errno), pOptDesc->optArg.argString);
+	        exit(COMPLEXITY_EXIT_BAD_FILE);
+	    }
+	_EOCode_;
+
+    doc = <<- _EODoc_
+	Instead of either a command line list of input files or reading
+	them from standard input, read the list of files from this file.
+	_EODoc_;
+};
+
+flag = {
+    name        = trace;
+    descrip     = "trace output file";
+    arg-type    = string;
+    arg-name    = file-name;
+    flag-code   = <<- _EOCode_
+	    trace_fp = fopen(pOptDesc->optArg.argString, "w");
+	    if (trace_fp == NULL) {
+	        fprintf(stderr, "fs error %d (%s) opening %s for tracing\n",
+	                errno, strerror(errno), pOptDesc->optArg.argString);
+	        exit(COMPLEXITY_EXIT_BAD_FILE);
+	    }
+	_EOCode_;
+
+    doc = <<- _EODoc_
+	Print intermediate scores to a trace file.
+	_EODoc_;
+};
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+ *  Exit codes.  The first few are warnings and "or"-ed into the
+ *  final exit code.
+ */
+exit-name[3]    = nomem;
+exit-desc[3]    = 'insufficient memory to run program';
+nomem-fail-code = nomem;
+
+exit-name[4]    = horrid-function;
+exit-desc[4]    = 'One or more functions scored over 100';
+
+exit-name[5]    = no-data;
+exit-desc[5]    = 'No qualifying procedures were found.';
+
+exit-name[32]   = bad-file;
+exit-desc[32]   = 'one or more input files were unreadable or empty.';
+file-fail-code  = bad-file;
+
+exit-status-desc = <<- _EODesc_
+	The "horrid-function" exit code is a warning only.
+	That code is used if the score for any function score exceeds
+	the arbitrary value of 100.
+	_EODesc_;
+
+option-doc-format = texi;
+
+detail  = <<- _EOF_
+	@code{complexity} ignores all cpp preprocessor directives -
+	calculating the complexity of the appearance of the code,
+	rather than the complexity after the preprocessor manipulates the
+	code.  @code{getchar(3)}, for example, will expand into quite
+	complicated code.
+	_EOF_;
+
+doc-section = {
+    ds-type   = DESCRIPTION;
+    ds-format = texi;
+    ds-text   = <<- _END_MAN_DESCRIP
+	The weight of each statement is the number of lines the statement
+	uses.  This value is multiplied by the nested logic weighting
+	(2.0 by default) for each layer of logic.  For example, this snippet:
+
+	@example
+	if (foo) @{
+	  if (bar) @{
+	    bumble; baz;
+	  @}
+	@}
+	@end example
+
+	will score 11.  This score is then scaled to approximate McCabe results
+	by dividing by 20 and rounding.  This scores "1" at the end.
+	@code{pmccabe} scores higher on simple procedures and
+	@code{complexity} scores higher with more deeply nested logic.
+
+	The scoring can be tweaked by adjusting the @code{--nesting-penalty}
+	and @code{--scale}-ing factors.  The default values were calibrated
+	by comparing the average results of millions of lines of code with
+	the results of pmccabe.
+
+	For the purposes of this program, a procedure is identified by a name
+	followed by a parenthesized expression and then an opening curly brace.
+	It ends with a closing curly brace in column 1.
+	_END_MAN_DESCRIP;
+};
