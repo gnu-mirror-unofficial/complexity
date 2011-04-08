@@ -1,5 +1,5 @@
 AC_INIT([Complexity],
-    m4_esyscmd([./git-version-gen .tarball-version]),
+    m4_esyscmd([./build-aux/git-version-gen .tarball-version]),
     [bkorb@gnu.org])
 
 AS_BOX([Configuring AC_PACKAGE_TARNAME AC_PACKAGE_VERSION])

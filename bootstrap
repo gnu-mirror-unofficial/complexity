@@ -2,7 +2,7 @@
 
 ## bootstrap -- bootstrapping script
 ##
-## Time-stamp:      "2011-04-08 10:38:02 bkorb"
+## Time-stamp:      "2011-04-08 12:50:31 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -72,6 +72,7 @@ boot_src()
 boot_gnulib()
 {
     local opts='--symlink --import --macro-prefix=CX --libtool'
+    opts=${opts}' --aux-dir=build-aux'
     local glt=$(which gnulib-tool)
     test -f "${glt}" || {
         glt=$(echo ~gnu/proj/gnulib)/gnulib-tool
@@ -83,8 +84,8 @@ boot_gnulib()
         ${gvg} XXX > $OLDPWD/.tarball-version
         cd -
     }
-    local modules='close malloc-posix stdbool snprintf git-version-gen fdl'
-    modules=${modules}' gendocs'
+    local modules='close malloc-posix stdbool snprintf git-version-gen'
+    modules=${modules}' fdl gendocs gpl-3.0'
     ${glt} ${opts} ${modules}
 
     cd doc
