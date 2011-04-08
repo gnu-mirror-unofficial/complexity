@@ -1,0 +1,134 @@
+@page
+@node    Complexity Computation
+@chapter Complexity Computation
+@cindex  Complexity Computation
+
+Fundamentally, this program counts lines of non-comment source lines,
+multiplies by a ``nesting factor'' for each level of logic nesting and
+divides by a scaling factor so that the typical results lie roughly in
+the same range as McCabe results.  That happens to be approximately 20.
+
+@menu
+* scores::      Complexity Scores
+* stats::       Complexity Statistics
+* tuning::      Scoring Adjustments
+@end menu
+
+@node     scores
+@section  Complexity Scores
+@cindex   scores
+
+The ``Complexity Scores'' table shows the score of each procedure identified
+that also exceeded the threshold score,
+@xref{complexity threshold, ---threshold}.  The entries on each line are:
+
+@itemize  @bullet
+@item
+The computed score
+@item
+The number of lines between the opening and closing curly braces
+@item
+The number of non-comment, non-blank lines found there
+@item
+The name of the source file
+@item
+The line number of the opening curly brace
+@item
+The name of the procedure
+@end itemize
+
+The output is sorted by the score and then the number of non-comment lines.
+Procedures with scores below the threshold are not displayed.
+
+@node     stats
+@section  Complexity Statistics
+@cindex   statistics
+
+The statistics are displayed both as a table and as a histogram,
+@xref{Example Output}.  It is under the control of the
+@code{--histogram} option.  The statistics are for each non-comment
+source line and each source line is given the score of its
+encompassing procedure.  This way, larger procedures are given
+proportionally more weight than one line procedures.
+
+The histogram is broken up into three ranges.  Scores of 0 through 99
+are displayed in 10 point groupings, 100 through 999 in 100 point
+groupings and 1000 and above (good grief!!, but they exist) are in
+1000 point groupings.  The number of asterisks represent the number
+of lines of code that are in procedures that score in the specified
+range.
+
+The tabular statistics are also based on lines, not procedures.
+@table @samp
+@item Average line score
+This is the procedure score times the non-comment
+line count, all added up and divided by the total non-comment source
+lines found.
+@item Median line score
+This score is found by adding the line counts in
+the sorted complexity score table until the half-of-all-lines point is
+reached.  The score for that procedure is the median score.  The
+majority of procedures will have a smaller score, but those are
+generally smaller procedures so they do not have as much weight.
+@item Standard deviation
+This is again based on each line being given the score of its
+containing procedure.  It is the square root of the mean square of the
+differences between individual line scores and the average line score.
+@end table
+
+@node     tuning
+@section  Scoring Adjustments
+@cindex   tuning
+@cindex   scores
+
+Scores can be adjusted with three different options:
+@table @samp
+@item nesting-penalty
+@xref{complexity nesting-penalty, ---nesting-penalty}.
+@item demi-nesting-penalty
+@xref{complexity demi-nesting-penalty, ---demi-nesting-penalty}.
+@item scale
+@xref{complexity scale, ---scale}.
+@end table
+
+The raw score is the number of lines or statements, whichever is
+greater, adjusted by a factor for the depth of the logic.  Statements
+are nested when they are inside of a block of statements for a
+``block'' statement (viz., ``do'', ``for'', ``if'', ``switch'' or
+``while'').  Statements within blocks used to constrain the scope of
+variables (not controlled by a block statement) are not multiplied by
+this factor.
+
+Expressions are nested when contained within parentheses.
+The @i{cost} of these is different.  Block level nesting multiplies the
+score for the block by the @code{--nesting-penalty} factor (2.0 by default).
+Nested expressions are multiplied by the @code{--demi-nesting-penalty},
+the square root of @code{--nesting-penalty} by default.
+
+Some attempt is made to judge the complexity of an expression.
+A complicated expression is one that contains an assignment operator,
+more than one relation operator, or a mixture of ``and'' and ``or''
+operators with any other different kind of non-arithmetic operator.
+Expression scores are minimized by:
+
+@itemize  @bullet
+@item
+Doing assignments outside of
+boolean expressions, or at least parenthesizing them.
+@item
+Parenthesizing each relationship operation in an expression
+of multiple ``and'' and/or ``or'' operations.  Yes, precedence
+parses them correctly, but it is less clear.
+@item
+Parenthesizing groups of ``and'' and ``or'' operations so that
+operators of only one type appear at one level.  For example,
+the first expression below instead of the second.  Yes, precedence
+means the effect is the same, but we're after code clarity so that
+correctness is more obvious.
+@example
+1: ((a && b) || (c && d))
+2: (a && b || c && d)
+@end example
+The first adds 2 to the raw score (before dividing by the scaling factor).
+The latter will add 5, assuming a @code{demi-nesting-penalty} of @code{1.41}.
+@end itemize

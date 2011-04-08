@@ -2,7 +2,7 @@
 
 ## bootstrap -- bootstrapping script
 ##
-## Time-stamp:      "2011-04-01 14:20:32 bkorb"
+## Time-stamp:      "2011-04-08 10:38:02 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -54,7 +54,7 @@ initialize()
 
 boot_src()
 {
-    cd src
+    cd $progdir/src
     test -f opts.c -a -f opts.h -a opts.c -nt opts.def || \
         autogen opts.def
 
@@ -84,7 +84,13 @@ boot_gnulib()
         cd -
     }
     local modules='close malloc-posix stdbool snprintf git-version-gen fdl'
+    modules=${modules}' gendocs'
     ${glt} ${opts} ${modules}
+
+    cd doc
+    sed 's/%%EMAIL%%/bkorb@gmail.com/g' gendocs_template > gd$$
+    mv gd$$ gendocs_template
+    cd ..
 }
 
 auto_tool()

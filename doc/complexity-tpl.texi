@@ -5,7 +5,7 @@ texi
 ##  Documentation template
 ##
 ## Author:            Bruce Korb <bkorb@gnu.org>
-## Time-stamp:        "2011-04-02 07:55:57 bkorb"
+## Time-stamp:        "2011-04-06 17:57:32 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -86,10 +86,10 @@ Complexity copyright @copyright{} [= copyright.date =] Bruce Korb
 @insertcopying
 @end titlepage
 
-@ifinfo
+@ifnottex
 
 @node Top, Introduction, , (dir)
-@top 
+@top [= prog-title =]
 @comment  node-name,  next,  previous,  up
 
 This file documents Complexity version [= version =].  It is a tool designed
@@ -100,16 +100,18 @@ scoring scheme.
 This edition documents version [=(. ver-update)=]
 
 @menu
-* Introduction::            Why another complexity analyzer
-* complexity Invocation::   Invoking complexity
+* Introduction::            Introduction
 * Complexity Computation::  Complexity Computation
 * Example Output::          Example Output
+* complexity Invocation::   Invoking complexity
 * Copying This Manual::     Copying This Manual
 * Concept Index::           General index
 @end menu
 
-@end ifinfo
+@end ifnottex
+
 @include intro.texi
+@include compute.texi
 
 @page
 @node    Example Output
@@ -122,13 +124,14 @@ going into the complexity source directory and running the command:
 [=`
 src=\`cd ${top_srcdir}/src && pwd\`
 bld=\`cd ${top_builddir}/src && pwd\`
-cmd='complexity --histogram --score --thresh=0'
+cmd='complexity --histogram --score --thresh=3'
 echo "$cmd '*.c'"
 `=]
 @end example
 
-The @code{--threshold} is set to zero because otherwise only one
-procedure would print (scores over the default of 30).
+The @code{--threshold} is set to three because all of the functions
+score below the default threshold of 30.  It is not zero because
+there are too many trivial (0, 1 or 2) functions for a short example.
 
 @noindent
 This results in:
@@ -137,7 +140,7 @@ This results in:
 [=`
 cd ${src}
 test -f opts.c || ln -s ${bld}/opts.c
-eval ${bld}/${cmd} *.c
+eval ${bld}/${cmd} *.c | sed 's/\\(.\\{66\\}\\).*/\\1/'
 test -L opts.c && rm opts.c
 `=]
 @end example

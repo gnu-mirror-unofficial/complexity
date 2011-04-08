@@ -1,10 +1,10 @@
 
 ## Makefile.am -- process this file with automake to produce Makefile.in
 ##
-## Time-stamp:      "2011-04-02 06:03:29 bkorb"
+## Time-stamp:      "2011-04-06 17:04:12 bkorb"
 ##
 ##  This file is part of Complexity.
-##  Complexity Copyright (c) 1992-2011 by Bruce Korb - all rights reserved
+##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
 ##
 ## Complexity is free software: you can redistribute it and/or modify it
 ## under the terms of the GNU General Public License as published by the
@@ -40,7 +40,8 @@ CLEANFILES          = *-stamp $(DEP_FILES) invoke-complexity.*
 TEXI2DVI_FLAGS      = --texinfo='@pagesizes 9.5in,7.0in'
 BUILT_SOURCES       = $(exe).texi
 info_TEXINFOS       = $(BUILT_SOURCES)
-EXTRA_DIST          = $(exe)-tpl.texi fdl.texi intro.texi
+EXTRA_DIST          = $(exe)-tpl.texi fdl.texi intro.texi compute.texi \
+	gendocs_template
 DISTCLEANFILES      = $(BUILT_SOURCES) $(man_MANS)
 
 $(man_MANS)         : $(optdefs)
@@ -50,7 +51,12 @@ $(exe).texi         : texi-stamp $(top_builddir)/src/complexity
 $(top_builddir)/src/complexity :
 	cd $(top_builddir)/src && make complexity
 
-texi-stamp          : $(optdefs) $(exe).texi
+texi-stamp          : $(optdefs)
 	top_srcdir="$(top_srcdir)" top_builddir="$(top_builddir)" \
 	    autogen -T$(texi_tpl) -b $(exe) $(optdefs)
 	autogen $(TXI_DEP) -Tagtexi-cmd -DLEVEL=chapter $(optdefs)
+
+gnudocs             : $(srcdir)/gendocs_template texi-stamp
+	title=`sed -n 's/^@title *//' $(exe).texi` ; \
+	opts='--docbook --texi2html' ; \
+	$(SHELL) $(top_srcdir)/gendocs.sh $$opts complexity "$$title"
