@@ -5,7 +5,7 @@ texi
 ##  Documentation template
 ##
 ## Author:            Bruce Korb <bkorb@gnu.org>
-## Time-stamp:        "2011-04-06 17:57:32 bkorb"
+## Time-stamp:        "2011-04-08 13:55:29 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -29,7 +29,7 @@ texi
 \internalpagesizes{46\baselineskip}{6in}{-.25in}{-.25in}{\bindingoffset}{36pt}%
 @end ignore
 @c %**start of header
-@setfilename complexity.texi
+@setfilename complexity.info
 @settitle [= package =] - [= prog-title =]
 @setchapternewpage off
 @syncodeindex pg cp
@@ -81,10 +81,10 @@ Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
 @vskip 0pt plus 1filll
 Complexity copyright @copyright{} [= copyright.date =] Bruce Korb
 
-[=(gpl "Complexity" "")=]
-
 @insertcopying
 @end titlepage
+
+@contents
 
 @ifnottex
 
@@ -161,6 +161,4 @@ You may copy this manual under the terms of the FDL
 @unnumbered Concept Index
 
 @printindex cp
-@page
-@contents
 @bye
