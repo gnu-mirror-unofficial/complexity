@@ -47,31 +47,35 @@ and the @code{and} and @code{or} logical operations.
 
 For example:
 @example
-if (A && B) || (C && D) || (E && F) xx;
+xx = (A && B) || (C && D) || (E && F);
 @end example
 scores as @code{6}.  Strictly speaking, there are, indeed, six code
 paths there.  But that is not as complicated as this:
 @example
   if (A) @{
-      if (B)
-          a-and-b;
-  @} else if (C) @{
-      if (D)
-          c-and-d;
-  @} else if (E) @{
-      if (F)
-          e-and-f;
+    if (B) @{
+      if (C) @{
+        if (D)
+          a-b-c-and-d;
+      @} else if (E) @{
+          a-b-no_c-and-e;
+      @}
+    @}
   @}
 @end example
-and yet they are scored the same.  @code{complexity} reduces the cost
+and yet this scores exactly the same.  @code{complexity} reduces the cost
 to very little for a sequence of conditions at the same level.  (That
-is, all @code{and} operators or all @code{or} operators.)  If you nest
-boolean expressions, there is a little cost, assuming you parenthesize
-grouped expressions so that @code{and} and @code{or} operators do not
-appear at the same parenthesized level.  Also assuming that you do not
-mix assignment and relational and boolean operators all together.  If
-you do not parenthesize these into subexpressions, their small scores
-get multiplied in ways that sometimes wind up as a much higher score.
+is, all @code{and} operators or all @code{or} operators.)  so the raw score
+for these examples are 4 and 35, respectively (1 and 2 after scaling,
+@pxref{complexity scale, --scale}).
+
+If you nest boolean expressions, there is a little cost, assuming you
+parenthesize grouped expressions so that @code{and} and @code{or}
+operators do not appear at the same parenthesized level.  Also
+assuming that you do not mix assignment and relational and boolean
+operators all together.  If you do not parenthesize these into
+subexpressions, their small scores get multiplied in ways that
+sometimes wind up as a much higher score.
 
 @item personal experience
 I have used @code{pmccabe} on a number of occasions.  For a first
