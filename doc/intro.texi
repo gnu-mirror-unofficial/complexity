@@ -6,7 +6,9 @@
 
 What good are code complexity analyzers?  The purpose of these tools
 is not to come up with a number wherein one value is good and another
-value is bad.  There are a few primary purposes for these tools:
+value is bad.  The goal is to avoid future bugs.
+
+There are a few primary purposes for these tools:
 
 @enumerate
 @item
@@ -15,42 +17,69 @@ a large collection of software.
 @item
 If you do not have a history of difficult (buggy) modules,
 it is useful to know where problems are most likely to be hiding.
+Identify where do you need to spend the most attention.
 @item
-A reminder to yourself that you see what you've written as obvious,
+A reminder to yourself.  You may see what you've written as obvious,
 but others may not.  It is useful to have a hint about what code may
-seem harder to understand by others.
+seem harder to understand by others, and then decide if some rework
+may be in order.
 @end enumerate
 
-But why another complexity analyzer?  The McCabe tool exists.
-I think the job it does is too rough.
+But why another complexity analyzer?  Even though the McCabe tool
+already exists, I think the job it does is too rough.
 
-@table @samp
-@item code length
+@menu
+* code length::                 Code Length
+* switch statement::            Switch Statement
+* logic conditions::            Logic Conditions
+* personal experience::         Personal Experience
+* rationale summary::           Rationale Summary
+@end menu
+
+@node    code length
+@section Code Length
 Since McCabe does not factor code length into its score, some folks
 have taken to saying either long functions or a high McCabe score find
 functions requiring attention.  But it means looking at two factors
 without any visibility into how the length is obfuscating the code.
 
-@item switch statement
+The technique used by this program is to count 1 for each line that a
+statement spans, plus the complexity score of control expressions
+(@code{for}, @code{while}, and @code{if} expressions).  The value for
+a block of code is the sum of these multiplied by a nesting factor
+(@pxref{complexity nesting-penalty}).  This score is then added to the
+score of the encompassing block.  With all other things equal, a
+procedure that is twice as long as another will have double the score.
+McCabe scores them identically.
+
+@node    switch statement
+@section Switch Statement
 @code{pmccabe} has changed the scoring of @code{switch}
 statements because they seemed too high.  @code{switch} statements
-are now ``free'' in the @file{pmccabe} analysis.  That's wrong, too.
+are now ``free'' in this new analysis.  That's wrong, too.
 The code length needs to be counted and the code within a @code{switch}
 statement adds more to the difficulty of comprehension than code at
 a shallower logic level.
 
-@item logic conditions
-McCabe does not score logic conditions very well.  It overcharges for
-simple logical operations, it doesn't charge for comma operators, and
-it undercharges for mixing assignment operators and relational operators
-and the @code{and} and @code{or} logical operations.
+This program will multiply the score of the @code{switch} statement
+content by the @xref{complexity nesting-penalty, nesting score factor}.
+
+@node    logic conditions
+@section Logic Conditions
+
+McCabe, as represented by @file{pmccabe}, does not score logic
+conditions very well.  It overcharges for simple logical operations,
+it doesn't charge for comma operators, and it undercharges for mixing
+assignment operators and relational operators and the @code{and} and
+@code{or} logical operators.
 
 For example:
 @example
 xx = (A && B) || (C && D) || (E && F);
 @end example
 scores as @code{6}.  Strictly speaking, there are, indeed, six code
-paths there.  But that is not as complicated as this:
+paths there.  That is a fairly straight forward expression that is not
+nearly as complicated as this:
 @example
   if (A) @{
     if (B) @{
@@ -63,11 +92,12 @@ paths there.  But that is not as complicated as this:
     @}
   @}
 @end example
-and yet this scores exactly the same.  @code{complexity} reduces the cost
+@noindent
+and yet this scores exactly the same.  This program reduces the cost
 to very little for a sequence of conditions at the same level.  (That
 is, all @code{and} operators or all @code{or} operators.)  so the raw score
 for these examples are 4 and 35, respectively (1 and 2 after scaling,
-@pxref{complexity scale, --scale}).
+@pxref{complexity scale, -\-scale}).
 
 If you nest boolean expressions, there is a little cost, assuming you
 parenthesize grouped expressions so that @code{and} and @code{or}
@@ -77,27 +107,54 @@ operators all together.  If you do not parenthesize these into
 subexpressions, their small scores get multiplied in ways that
 sometimes wind up as a much higher score.
 
-@item personal experience
+The intent here is to encourage easy to understand boolean expressions.
+This is done by,
+@itemize 
+@item
+not combining them with assignment statements
+@item
+canonicalizing them (two level expressions with all @code{&&}
+operators at the bottom level and all @code{||} operators in the
+nested level -\- or vice versa)
+@item
+parenthesizing for visual clarity (relational operations parenthesized
+before being joined into larger @code{&&} or @code{||} expressions)
+@item
+breaking them up into multiple @code{if} statements, if convenient.
+@end itemize
+
+@node    personal experience
+@section Personal Experience
+
 I have used @code{pmccabe} on a number of occasions.  For a first
 order approximation, it does okay.  However, I was interested in
-zeroing in on the modules that needed the most help.  I was finding I
-was looking at functions where I ought to have been looking at others.
-So, I put this together to see if there was a better correlation
-between what seemed like hard code to me and the score derived by an
-analysis tool.
+zeroing in on the modules that needed the most help and there were a
+lot of modules needing help.  I was finding I was looking at some
+functions where I ought to have been looking at others.  So, I put
+this together to see if there was a better correlation between what
+seemed like hard code to me and the score derived by an analysis tool.
 
 This has worked much better.  I ran @code{complexity} and
 @code{pmccabe} against several million lines of code.  I correlated
 the scores.  Where the two tools disagreed noticeably in relative
 ranking, I took a closer look.  I found that @file{complexity} did,
 indeed, seem to be more appropriate in its scoring.
-@end table
 
-Though I have tuned various knobs so that scores come out looking very
-much like the ranges @code{pmccabe} turn out, @code{complexity} will
-readily score as zero functions that are extremely simple, and code
-that is very long or with many levels of logic nesting will wind up
-scoring much higher than with @code{pmccabe}.
+@node    rationale summary
+@section Rationale Summary
 
-I have left the knobs available for tuning your results to your
-own satisfaction.
+Ultimately, complexity is in the eye of the beholder and, even,
+the particular mood of the beholder, too.  It is difficult to
+tune a tool to properly accommodate these variables.
+
+@code{complexity} will readily score as zero functions that are
+extremely simple, and code that is long with many levels of logic
+nesting will wind up scoring much higher than with McCabe, barring
+extreme changes to the default values for the tunables.
+
+I have included several adjustments so that scores can be
+tweaked to suit personal taste or gathered experience.
+(@xref{complexity nesting-penalty, nesting score factor}, and
+@ref{complexity demi-nesting-penalty, nested expression scoring factor},
+but also @xref{complexity scale, normalization scaling factor},
+to adjust scores to approximate scores rendered by @code{pmccabe}).
