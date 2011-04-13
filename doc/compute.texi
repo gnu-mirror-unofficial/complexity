@@ -46,7 +46,8 @@ Procedures with scores below the threshold are not displayed.
 
 The statistics are displayed both as a table and as a histogram,
 @xref{Example Output}.  It is under the control of the
-@code{--histogram} option.  The statistics are for each non-comment
+@ref{complexity histogram, ---histogram} option.
+The statistics are for each non-comment
 source line and each source line is given the score of its
 encompassing procedure.  This way, larger procedures are given
 proportionally more weight than one line procedures.

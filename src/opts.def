@@ -1,6 +1,6 @@
 
 /*  -*- Mode: conf -*-
- *  Time-stamp:        "2011-04-02 14:27:37 bkorb"
+ *  Time-stamp:        "2011-04-11 18:01:55 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -40,7 +40,7 @@ copyright   = {
 };
 
 version     = `
- ver_file=${top_srcdir}/.tarball-version
+ ver_file=${top_srcdir:-..}/.tarball-version
  if test -f ${ver_file}
  then cat ${ver_file}
  else echo 0.0
@@ -66,9 +66,11 @@ export = <<- _EOExport_
 	extern  int     score_ct;
 	_EOExport_;
 
-include = "score_t penalty  = DEFAULT_PENALTY;\n"
-          "FILE *  trace_fp = NULL;\n"
-          "int     score_ct = 0;\n";
+include = <<- _EOInclude_
+	score_t penalty  = DEFAULT_PENALTY;
+	FILE *  trace_fp = NULL;
+	int     score_ct = 0;
+	_EOInclude_;
 
 main = {
     main-type    = for-each;
@@ -113,7 +115,8 @@ flag = {
     doc = <<- _EODoc_
 	If any procedures score higher than this threshold, then the
 	program will exit non-zero.  (@code{4/COMPLEX_EXIT_HORRID_FUNCTION},
-	if no other problems are encountered.)
+	if no other problems are encountered.)  By default, this program exits
+	zero unless one function exceeds the horrid score of 100.
 	_EODoc_;
 };
 
@@ -165,8 +168,8 @@ flag = {
     descrip     = "complexity scaling factor";
 
     doc = <<- _EODoc_
-	By default, the score is 20 which was normalized to roughly correspond
-	to the McCabe scaling:
+	By default, the scaling is 20 which divides the raw score by 20.
+	This was normalized to roughly correspond to the McCabe scores:
 
 	@table @samp
 	@item 0-9
@@ -219,7 +222,7 @@ flag = {
 
     doc = <<- _EODoc_
 	If you specify @code{--histogram}, individual scores will not be
-	displayed without this option.
+	displayed, unless this option is specified.
 	_EODoc_;
 };
 
@@ -239,6 +242,8 @@ flag = {
 	Use K&R syntax for a procedure header.
 	@item
 	Use a preprocessing macro to assemble the procedure header.
+	@item
+	Simplify your code.
 	@end enumerate
 	Generally speaking, anything you do that alters normal C syntax will
 	confuse the lexical analysis.  If a procedure is not seen, then it
