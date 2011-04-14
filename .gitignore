@@ -35,6 +35,7 @@ complexity.1
 /warn-on-use.h
 /lib
 /m4
+/release
 autom4te.cache
 /git-version-gen
 /config.*
