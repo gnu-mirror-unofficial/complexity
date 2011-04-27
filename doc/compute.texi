@@ -3,10 +3,11 @@
 @chapter Complexity Computation
 @cindex  Complexity Computation
 
+The principal goal
 Fundamentally, this program counts lines of non-comment source lines,
 multiplies by a ``nesting factor'' for each level of logic nesting and
 divides by a scaling factor so that the typical results lie roughly in
-the same range as McCabe results.  That happens to be approximately 20.
+the same range as @code{pmccabe} results.  That happens to be approximately 20.
 
 @menu
 * scores::      Complexity Scores

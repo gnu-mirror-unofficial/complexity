@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-04-02 12:39:41 bkorb"
+ *  Time-stamp:        "2011-04-27 14:50:55 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -446,7 +446,7 @@ complex_eval(char const * fname)
             fstate.tkn_len = sizeof(pstate->pname) - 1;
         memcpy(pstate->pname, fstate.tkn_text, fstate.tkn_len);
 
-        pstate->end = strstr(fstate.scan, "\n}\n");
+        pstate->end = strstr(fstate.scan, "\n}");
         if (pstate->end == NULL) {
             free(pstate);
             break;

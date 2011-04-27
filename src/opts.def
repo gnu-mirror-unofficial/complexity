@@ -1,6 +1,6 @@
 
 /*  -*- Mode: conf -*-
- *  Time-stamp:        "2011-04-11 18:01:55 bkorb"
+ *  Time-stamp:        "2011-04-27 12:27:50 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -402,5 +402,16 @@ doc-section = {
 	For the purposes of this program, a procedure is identified by a name
 	followed by a parenthesized expression and then an opening curly brace.
 	It ends with a closing curly brace in column 1.
+	_END_MAN_DESCRIP;
+};
+
+doc-section = {
+    ds-type   = BUGS;
+    ds-format = texi;
+    ds-text   = <<- _END_MAN_DESCRIP
+	This program does not recognize K&R procedure headers.
+
+	Some procedures still get missed.  Usually, these are procedures
+	that use the C pre-processor to extend the C language in some way.
 	_END_MAN_DESCRIP;
 };

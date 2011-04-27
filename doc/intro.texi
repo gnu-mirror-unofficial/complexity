@@ -4,41 +4,45 @@
 @chapter Introduction
 @cindex  Introduction
 
-What good are code complexity analyzers?  The purpose of these tools
-is not to come up with a number wherein one value is good and another
-value is bad.  The goal is to avoid future bugs.
-
-There are a few primary purposes for these tools:
+Complexity measurement tools provide several pieces of information.
+They help to:
 
 @enumerate
 @item
-To get a handle on the difficulty in understanding
-a large collection of software.
+locate suspicious areas in unfamiliar code
 @item
-If you do not have a history of difficult (buggy) modules,
-it is useful to know where problems are most likely to be hiding.
-Identify where do you need to spend the most attention.
+get an idea of how much effort may be required to understand that code
 @item
-A reminder to yourself.  You may see what you've written as obvious,
+get an idea of the effort required to test a code base
+@item
+provide a reminder to yourself.  You may see what you've written as obvious,
 but others may not.  It is useful to have a hint about what code may
 seem harder to understand by others, and then decide if some rework
 may be in order.
 @end enumerate
 
-But why another complexity analyzer?  Even though the McCabe tool
-already exists, I think the job it does is too rough.
+But why another complexity analyzer?  Even though the McCabe analysis
+tool already exists (@code{pmccabe}), I think the job it does is too
+rough for gauging complexity, though it is ideal for gauging the
+testing effort.  Each code path should be tested and the @code{pmccabe}
+program provides a count of code paths.  That, however, is not the
+only issue affecting human comprehension.  This program attempts to
+take into account other factors that affect a human's ability to
+understand.
 
 @menu
-* code length::                 Code Length
-* switch statement::            Switch Statement
-* logic conditions::            Logic Conditions
-* personal experience::         Personal Experience
-* rationale summary::           Rationale Summary
+* code length::             Code Length
+* switch statement::        Switch Statement
+* logic conditions::        Logic Conditions
+* personal experience::     Personal Experience
+* rationale summary::       Rationale Summary
+* parsing::                 Parsing Method
+* scoring algorithm::       Complexity Measurement Algorithm
 @end menu
 
 @node    code length
 @section Code Length
-Since McCabe does not factor code length into its score, some folks
+Since @code{pmccabe} does not factor code length into its score, some folks
 have taken to saying either long functions or a high McCabe score find
 functions requiring attention.  But it means looking at two factors
 without any visibility into how the length is obfuscating the code.
@@ -50,7 +54,7 @@ a block of code is the sum of these multiplied by a nesting factor
 (@pxref{complexity nesting-penalty}).  This score is then added to the
 score of the encompassing block.  With all other things equal, a
 procedure that is twice as long as another will have double the score.
-McCabe scores them identically.
+@code{pmccabe} scores them identically.
 
 @node    switch statement
 @section Switch Statement
@@ -67,11 +71,11 @@ content by the @xref{complexity nesting-penalty, nesting score factor}.
 @node    logic conditions
 @section Logic Conditions
 
-McCabe, as represented by @file{pmccabe}, does not score logic
-conditions very well.  It overcharges for simple logical operations,
-it doesn't charge for comma operators, and it undercharges for mixing
-assignment operators and relational operators and the @code{and} and
-@code{or} logical operators.
+@file{pmccabe} does not score logic conditions very well.
+It overcharges for simple logical operations, it doesn't charge for
+comma operators, and it undercharges for mixing assignment operators
+and relational operators and the @code{and} and @code{or} logical
+operators.
 
 For example:
 @example
@@ -97,7 +101,7 @@ and yet this scores exactly the same.  This program reduces the cost
 to very little for a sequence of conditions at the same level.  (That
 is, all @code{and} operators or all @code{or} operators.)  so the raw score
 for these examples are 4 and 35, respectively (1 and 2 after scaling,
-@pxref{complexity scale, -\-scale}).
+@pxref{complexity scale, @code{--scale}}).
 
 If you nest boolean expressions, there is a little cost, assuming you
 parenthesize grouped expressions so that @code{and} and @code{or}
@@ -149,7 +153,7 @@ tune a tool to properly accommodate these variables.
 
 @code{complexity} will readily score as zero functions that are
 extremely simple, and code that is long with many levels of logic
-nesting will wind up scoring much higher than with McCabe, barring
+nesting will wind up scoring much higher than with @code{pmccabe}, barring
 extreme changes to the default values for the tunables.
 
 I have included several adjustments so that scores can be
@@ -158,3 +162,126 @@ tweaked to suit personal taste or gathered experience.
 @ref{complexity demi-nesting-penalty, nested expression scoring factor},
 but also @xref{complexity scale, normalization scaling factor},
 to adjust scores to approximate scores rendered by @code{pmccabe}).
+
+@node     parsing
+@section  Parsing Method
+@cindex   parsing
+
+The method chosen for parsing the source has an effect on what gets
+seen (scored) by the program.
+
+@menu
+* complexity parsing::  Complexity Measurement Parsing
+* post-pp parsing::     Post-PreProcessing Parsing
+* during pp parsing::   During PreProcessing Parsing
+* pmccabe parsing::     @code{pmccabe} Parsing
+@end menu
+
+@node       complexity parsing
+@subsection Complexity Measurement Parsing
+
+This program examines the actual source a human looks at when the
+file is opened, provided it is not pre-processed by @code{unifdef},
+@xref{complexity unifdef, @code{unifdef}}.  This was chosen because
+uncompiled code adds to the complexity of what a human must understand.
+However, sometimes the source will contain unbalanced braces a la:
+@example
+#if FOO
+  for (int ix = foo;;) @{
+#else
+  for (int ix = bar;;) @{
+#endif
+    code...
+  @}
+@end example
+rendering code that cannot be parsed correctly.  @code{unifdef}-ing
+makes it parsable.  Unfortunately, because the practice of @code{ifdef}-ing
+unbalanced curly braces is so common, this program cannot rely on
+finding the correct closing brace.
+
+@strong{CAVEAT}: for the purposes of this program, procedures end
+when either a matching closing brace is found @emph{or} a closing curly brace
+is found in column 1, whichever comes first.  If the closing brace
+in column one does not match the procedure opening brace, the
+procedure is considered unscorable.
+
+Fortunately, unscorable procedures are relatively unusual.
+
+@strong{CAVEAT2}: K&R procedure headers are not recognized.
+If anything other than an opening curly brace appears after
+the parameter list will cause the code recognizer to go back
+into ``look for a procedure header'' mode.  K&R procedures
+are not just not scored, they are completely ignored.
+
+This should probably get fixed, though.
+
+@node       post-pp parsing
+@subsection Post-PreProcessing Parsing
+
+Another approach would be to use the @code{C} compiler and analize the
+tokens coming out of the preprocessor.  The drawbacks are that macro
+expansions will add to the complexity, even though they do not add to
+human perceived complexity, and uncompiled code do not add to the
+complexity measure.  The benefit, of course, is that you know for
+certain where a procedure body starts and ends.
+
+@node       during pp parsing
+@subsection During PreProcessing Parsing
+
+This would require going into the C preprocessor code and cause macros
+to not be expanded.  Again, the great benefit is that you know for
+certain you can find the starting and ending braces for every
+procedure body.  The downsides are the extra work and, again, the
+uncompiled code won't get counted in the complexity measure.
+
+This might be a useful exercise to do some day, just to see
+how helpful it might be.  Being able to recognize all procedure
+bodies without fail would be a good thing.
+
+@node       pmccabe parsing
+@subsection @code{pmccabe} Parsing
+
+The @code{pmccabe} parsing actually inspired the method for this program.
+Thd difference is that @code{pmccabe} will always keep scanning until
+a procedure body's closing curly brace is found, even if that means
+counting the code from several following procedure definitions.
+The consequence of this is that this program's code will see some
+procedures that @code{pmccabe} will not, and vice versa.
+
+@node    scoring algorithm
+@section Complexity Measurement Algorithm
+
+Fundamentally, this program counts non-comment source lines and
+examines elements of parenthesized expressions.  This score
+is multiplied by a nesting scoring factor for each layer of code nesting.
+
+A parenthesized expression is scanned for operators.  If they are all
+arithmetic operators, or all arithmetic and one relational operator,
+the score is zero.  If all the operators are boolean @code{and}s or
+they are all @code{or}s, then the score is one.  An assignment
+operator with arithmetic operators also scores one.  If you mix
+relational operators and all @code{and}s or all @code{or}s, the score
+is the number of boolean elements.  If you mix @code{and}s and
+@code{or}s at the same parenthetical level, the two counts are
+multiplied, unless the boolean element count is higher.
+
+Fundamentally, do not use multiple relational or boolean operators at
+the same parenthetical level, unless they are all boolean @code{and}s
+or they are all boolean @code{or}s.  If you use boolean operators and
+relational operators in one expression, you are charged one statement
+for each boolean element.
+
+After scoring each statement and any parenthesized expressions, the
+score is multiplied by any encompassing controlled block and added to
+the score of that block.  A ``controlled block'' is a curly-braced
+collection of statements controlled by one of the statement
+controlling statements @code{do}, @code{for}, @code{else}, @code{if},
+@code{switch}, or @code{while}.  Stand alone blocks for scoping local
+variables do not trigger the multiplier.
+
+You may trace the scores of parenthesized expressions and code
+blocks (@pxref{complexity trace, trace output file}).  You will see
+the raw score of the code block or expression.
+
+The final score is the outermost score divided by the ``scaling factor'',
+@xref{complexity scale, complexity scaling factor}.

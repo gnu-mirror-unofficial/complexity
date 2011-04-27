@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-04-02 14:07:23 bkorb"
+ *  Time-stamp:        "2011-04-27 14:46:16 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -761,7 +761,7 @@ score_proc(state_t * score)
         fprintf(stderr, "procedure %s in %s ended before final close bracket\n",
                 score->pname, score->fstate->fname);
 
-        return score->score += penalty;
+        score->score += penalty;
     }
 
     if (score->score < MAX_SCORE)
