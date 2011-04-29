@@ -1,6 +1,6 @@
 
 /*  -*- Mode: conf -*-
- *  Time-stamp:        "2011-04-27 12:27:50 bkorb"
+ *  Time-stamp:        "2011-04-29 16:32:57 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -24,7 +24,7 @@ AutoGen Definitions options;
 argument    = "[ <file-name> ... ]";
 prog-name   = complexity;
 prog-title  = "Measure the Complexity of C source";
-package     = 'Complexity';
+package     = 'GNU Complexity';
 
 explain     = <<- _EOF_
 	Compute the complexity of source code not just with a
@@ -169,7 +169,7 @@ flag = {
 
     doc = <<- _EODoc_
 	By default, the scaling is 20 which divides the raw score by 20.
-	This was normalized to roughly correspond to the McCabe scores:
+	This was normalized to roughly correspond to the @code{pmccabe} scores:
 
 	@table @samp
 	@item 0-9
@@ -389,15 +389,15 @@ doc-section = {
 	@}
 	@end example
 
-	will score 11.  This score is then scaled to approximate McCabe results
-	by dividing by 20 and rounding.  This scores "1" at the end.
-	@code{pmccabe} scores higher on simple procedures and
-	@code{complexity} scores higher with more deeply nested logic.
+	will score 11.  This score is then scaled to approximate @code{pmccabe}
+	results by dividing by 20 and rounding.  This scores "1" at the end.
+	@code{pmccabe} scores higher on simple procedures and @code{complexity}
+	scores higher with more deeply nested logic.
 
 	The scoring can be tweaked by adjusting the @code{--nesting-penalty}
 	and @code{--scale}-ing factors.  The default values were calibrated
 	by comparing the average results of millions of lines of code with
-	the results of pmccabe.
+	the results of @code{pmccabe}.
 
 	For the purposes of this program, a procedure is identified by a name
 	followed by a parenthesized expression and then an opening curly brace.
