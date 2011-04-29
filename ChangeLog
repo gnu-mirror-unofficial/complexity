@@ -1,8 +1,9 @@
-2011-04-01  Bruce Korb  <bkorb@gnu.org>
+2011-04-29  Bruce Korb  <bkorb@gnu.org>
 
 	* doc/*.texi: some elaborations
 	* src/complexity.c (complex_eval): "\n}" ends a proc.
 	* src/opts.def (BUGS): add section
+	(package): dubbed GNU.
 	* src/score.c (score_proc): do not return before score is scaled.
 
 2011-04-01  Bruce Korb  <bkorb@gnu.org>

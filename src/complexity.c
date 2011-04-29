@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-04-27 14:50:55 bkorb"
+ *  Time-stamp:        "2011-04-29 16:39:22 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -107,7 +107,8 @@ initialize(int argc, char ** argv)
 
     scores = malloc(1024 * sizeof(*scores));
     score_alloc_ct = 1024;
-    scaling = 1.0 / OPT_VALUE_SCALE;
+    scaling = (score_t)(HAVE_OPT(SCALE) ? OPT_VALUE_SCALE : DEFAULT_SCALE);
+    scaling = 1.0 / scaling;
 }
 
 static inline int

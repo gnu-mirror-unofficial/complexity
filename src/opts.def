@@ -1,6 +1,6 @@
 
 /*  -*- Mode: conf -*-
- *  Time-stamp:        "2011-04-29 16:32:57 bkorb"
+ *  Time-stamp:        "2011-04-29 16:40:44 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -58,6 +58,8 @@ explain = <<- _EOExplanation_
 
 export = <<- _EOExport_
 	#define DEFAULT_PENALTY       2.0
+	#define DEFAULT_SCALE         20
+
 	typedef double  score_t;
 	extern  score_t penalty;
 
@@ -163,7 +165,6 @@ flag = {
     name        = scale;
     value       = s;
     arg-type    = number;
-    arg-default = 20;
     arg-name    = factor;
     descrip     = "complexity scaling factor";
 
