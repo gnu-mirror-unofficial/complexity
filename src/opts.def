@@ -47,6 +47,7 @@ version     = `
  fi`;
 
 long-opts;
+gnu-usage;
 environrc;
 rcfile      = '.complexityrc';
 homerc      = '$@/complex.conf', '$HOME', '$PROJECT_ROOT/complex.conf', '.';

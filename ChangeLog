@@ -1,3 +1,7 @@
+2011-05-02  Bruce Korb  <bkorb@gnu.org>
+
+	* src/opts.def (gnu-usage): add this attribute
+
 2011-04-29  Bruce Korb  <bkorb@gnu.org>
 
 	* doc/*.texi: some elaborations
