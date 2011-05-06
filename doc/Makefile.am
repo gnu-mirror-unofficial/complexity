@@ -1,7 +1,7 @@
 
 ## Makefile.am -- process this file with automake to produce Makefile.in
 ##
-## Time-stamp:      "2011-04-08 13:47:43 bkorb"
+## Time-stamp:      "2011-05-03 17:41:34 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -57,7 +57,7 @@ texi-stamp          : $(optdefs)
 	autogen $(TXI_DEP) -Tagtexi-cmd -DLEVEL=chapter $(optdefs)
 
 gnudocs             : $(srcdir)/gendocs_template texi-stamp
-	title=`sed -n 's/^@title *//' $(exe).texi` ; \
-	opts='--docbook --texi2html' ; \
+	title=`sed -n 's/^@title  *//p' $(exe).texi` ; \
+	opts='--texi2html' ; \
 	$(SHELL) $(top_srcdir)/build-aux/gendocs.sh \
 	    $$opts complexity "$$title"
