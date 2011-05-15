@@ -1,6 +1,6 @@
 
 /*  -*- Mode: conf -*-
- *  Time-stamp:        "2011-04-29 16:40:44 bkorb"
+ *  Time-stamp:        "2011-05-15 09:08:25 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -23,7 +23,7 @@ AutoGen Definitions options;
 
 argument    = "[ <file-name> ... ]";
 prog-name   = complexity;
-prog-title  = "Measure the Complexity of C source";
+prog-title  = "Measure complexity of C source";
 package     = 'GNU Complexity';
 
 explain     = <<- _EOF_

@@ -5,7 +5,7 @@ texi
 ##  Documentation template
 ##
 ## Author:            Bruce Korb <bkorb@gnu.org>
-## Time-stamp:        "2011-04-08 13:55:29 bkorb"
+## Time-stamp:        "2011-05-15 09:09:59 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -67,7 +67,7 @@ Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
 
 @dircategory Programming Tools
 @direntry
-* Complexity: ([=prog-name=]).         [= prog-title =]
+* Complexity: ([=prog-name=]).         [= prog-title =].
 @end direntry
 
 @finalout
