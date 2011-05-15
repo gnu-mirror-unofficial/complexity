@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-05-15 11:30:34 bkorb"
+ *  Time-stamp:        "2011-05-15 11:51:46 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -226,8 +226,7 @@ print_stats(void)
     _St_("75%%-ile score:        %7d (25%% in higher score procs)\n",   \
          pctile[2])                                                     \
     _St_("Highest score:        %7d",   high_score)                     \
-    _St_(" (%s)\n",                     high_buf)                       \
-    _St_("Unscored procedures:  %7d\n", unscore_ct)
+    _St_(" (%s)\n",                     high_buf)
 
 #define _St_(_s, _a)  _s
     static char const summary_fmt[] = "\n" SUMMARY_TABLE;
@@ -253,6 +252,9 @@ print_stats(void)
 #define _St_(_s, _a)  , _a
     printf(summary_fmt SUMMARY_TABLE);
 #undef  _St_
+
+    if (unscore_ct > 0)
+        printf("Unscored procedures:  %7d\n", unscore_ct);
 #undef  SUMMARY_TABLE
 }
 

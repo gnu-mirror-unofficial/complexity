@@ -194,6 +194,7 @@ lines found.
 @item 25%-ile score
 @itemx 50%-ile score
 @itemx 75%-ile score
+@itemx Highest score
 Since the distribution of scores is nothing like a bell curve, the mean
 and standard deviation do not give a very clear picture of the distribution
 of the scores.  Typically, the standard deviation is larger than the average
@@ -201,6 +202,9 @@ score.  So, instead the program prints the the four quartile scores.
 The score for which 25, 50, and 75 percent of code is scored less than,
 plus the highest scoring procedure (100 percent of code scores less than
 or equal to that score).
+@item Unscored procedures
+If any procedures were found that could not be scored, the number of such
+procedures is printed.
 @end table
 
 @node     tuning
