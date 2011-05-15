@@ -1,3 +1,11 @@
+2011-05-15  Bruce Korb  <bkorb@gnu.org>
+
+	* src/opts.def (prog-title): Change per Karl Berry's request
+	* src/complexity.c (print_stats): Standard deviation makes no sense
+	because the values do not form a bell curve.  Instead, print the
+	25, 50, 75 and 100 percentile scores.
+	* src/score.c (score_proc): proc should return void.
+
 2011-05-02  Bruce Korb  <bkorb@gnu.org>
 
 	* src/opts.def (gnu-usage): add this attribute

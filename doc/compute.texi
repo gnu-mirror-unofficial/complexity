@@ -191,16 +191,16 @@ The tabular statistics are also based on lines, not procedures.
 This is the procedure score times the non-comment
 line count, all added up and divided by the total non-comment source
 lines found.
-@item Median line score
-This score is found by adding the line counts in
-the sorted complexity score table until the half-of-all-lines point is
-reached.  The score for that procedure is the median score.  The
-majority of procedures will have a smaller score, but those are
-generally smaller procedures so they do not have as much weight.
-@item Standard deviation
-This is again based on each line being given the score of its
-containing procedure.  It is the square root of the mean square of the
-differences between individual line scores and the average line score.
+@item 25%-ile score
+@itemx 50%-ile score
+@itemx 75%-ile score
+Since the distribution of scores is nothing like a bell curve, the mean
+and standard deviation do not give a very clear picture of the distribution
+of the scores.  Typically, the standard deviation is larger than the average
+score.  So, instead the program prints the the four quartile scores.
+The score for which 25, 50, and 75 percent of code is scored less than,
+plus the highest scoring procedure (100 percent of code scores less than
+or equal to that score).
 @end table
 
 @node     tuning

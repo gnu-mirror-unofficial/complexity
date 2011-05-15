@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-04-27 14:46:16 bkorb"
+ *  Time-stamp:        "2011-05-15 11:00:49 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -731,7 +731,7 @@ handle_array_init(state_t * sc)
     return res + handle_expression(sc);
 }
 
-score_t
+void
 score_proc(state_t * score)
 {
     static bool_t fix_dispatch = true;
@@ -750,7 +750,7 @@ score_proc(state_t * score)
                 score->pname, score->fstate->fname);
 
         score->score = MAX_SCORE;
-        return MAX_SCORE;
+        return;
     }
 
     score->score = handle_stmt_block(score);
@@ -768,7 +768,6 @@ score_proc(state_t * score)
         score->score = (score_t)(unsigned int)((score->score * scaling) + 0.9);
     score->ln_ct--;
     score->ncln_ct--;
-    return score->score;
 }
 /*
  * Local Variables:

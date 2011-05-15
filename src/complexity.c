@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-05-15 09:38:06 bkorb"
+ *  Time-stamp:        "2011-05-15 11:30:34 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -36,7 +36,6 @@ static int     unscore_ct     = 0;
 static int     high_score     = 0;
        score_t subexp_penalty = 0;
        score_t threshold      = 0;
-static score_t horrid_function_limit = 0;
        score_t scaling;
 
 static char const head_fmt[] =     "Complexity Scores\n"
@@ -103,7 +102,6 @@ initialize(int argc, char ** argv)
         subexp_penalty = sqrt(penalty);
 
     threshold = (score_t)OPT_VALUE_THRESHOLD - 0.5;
-    horrid_function_limit = (score_t)OPT_VALUE_HORRID_THRESHOLD;
 
     scores = malloc(1024 * sizeof(*scores));
     score_alloc_ct = 1024;
@@ -219,11 +217,14 @@ print_stats(void)
 #define SUMMARY_TABLE                                                   \
     _St_("Scored procedure ct:  %7d\n", score_ct)                       \
     _St_("Non-comment line ct:  %7d\n", ttl_line_ct)                    \
-    _St_("Average line score:   %7d (average proc score for all lines)\n", \
-         av_line_score)                                                 \
-    _St_("Median line score:    %7d (half of code in higher score procs)\n", \
-         median_score)                                                  \
-    _St_("Standard deviation:   %7d\n", (int)sum_of_sq)                 \
+    _St_("Average line score:   %7d\n",                                 \
+         (int)(av_score + 0.5))                                         \
+    _St_("25%%-ile score:        %7d (75%% in higher score procs)\n",   \
+         pctile[0])                                                     \
+    _St_("50%%-ile score:        %7d (half in higher score procs)\n",   \
+         pctile[1])                                                     \
+    _St_("75%%-ile score:        %7d (25%% in higher score procs)\n",   \
+         pctile[2])                                                     \
     _St_("Highest score:        %7d",   high_score)                     \
     _St_(" (%s)\n",                     high_buf)                       \
     _St_("Unscored procedures:  %7d\n", unscore_ct)
@@ -233,30 +234,25 @@ print_stats(void)
 #undef  _St_
 
     score_t av_score     = score_ttl / ttl_line_ct;
-    score_t sum_of_sq    = 0;
-    int     median_score = 0;
+    int     pctile[5]    = { 0, 0, 0, 0, 0 };
+    int     pct_ix       = 0;
     int     counter      = 0;
     int     ix;
-    int     half_line_ct = ttl_line_ct / 2;
+    int     pct_ct       = ttl_line_ct / 4;
+    int     pct_thresh   = pct_ct;
 
     for (ix = 0; ix < score_ct; ix++) {
-        score_t delta = scores[ix]->score - av_score;
-        sum_of_sq += delta * delta;
-        if (median_score == 0) {
-            counter += scores[ix]->ncln_ct;
-            if (counter >= half_line_ct)
-                median_score = (int)(scores[ix]->score + 0.5);
+        counter += scores[ix]->ncln_ct;
+
+        if (counter >= pct_thresh) {
+            pctile[pct_ix++] = (int)(scores[ix]->score + 0.5);
+            pct_thresh      += pct_ct;
         }
     }
 
-    sum_of_sq = sqrt(sum_of_sq / score_ct);
-
-    {
-        int av_line_score = (int)(av_score + 0.5);
 #define _St_(_s, _a)  , _a
-        printf(summary_fmt SUMMARY_TABLE);
+    printf(summary_fmt SUMMARY_TABLE);
 #undef  _St_
-    }
 #undef  SUMMARY_TABLE
 }
 
@@ -414,6 +410,30 @@ load_file(fstate_t * fs)
     return true;
 }
 
+static bool_t
+add_score(state_t * pstate)
+{
+    if (threshold > pstate->score)
+        return false;
+
+    int val = (int)(pstate->score);
+
+    if (val >= MAX_SCORE) {
+        fprintf(stderr, "unscored: %s in %s on line %d\n",
+                pstate->pname, pstate->fstate->fname, pstate->proc_line);
+        unscore_ct++;
+        return false;
+    }
+
+    if (val > high_score) {
+        snprintf(high_buf, sizeof(high_buf), "%s() in %s",
+                 pstate->pname, pstate->fstate->fname);
+        high_score = val;
+    }
+
+    return true;
+}
+
 complexity_exit_code_t
 complex_eval(char const * fname)
 {
@@ -466,30 +486,11 @@ complex_eval(char const * fname)
         pstate->end      += 3;
         pstate->proc_line = fstate.cur_line;
 
-        score_t score = score_proc(pstate);
-
-        if (score > horrid_function_limit)
-            res = COMPLEXITY_EXIT_HORRID_FUNCTION;
-
-        if (threshold > score) {
+        score_proc(pstate);
+        if (! add_score(pstate)) {
         skip_proc:
             free(pstate);
             continue;
-        }
-
-        int val = (int)(pstate->score);
-
-        if (val >= MAX_SCORE) {
-            fprintf(stderr, "unscored: %s in %s on line %d\n",
-                    pstate->pname, fname, pstate->proc_line);
-            unscore_ct++;
-            free(pstate);
-            continue;
-
-        } else if (val > high_score) {
-            snprintf(high_buf, sizeof(high_buf), "%s() in %s",
-                     pstate->pname, fname);
-            high_score = val;
         }
 
         if (pstate->ncln_ct == 0) {
@@ -515,6 +516,9 @@ complex_eval(char const * fname)
     free((void *)fstate.text);
 
     HAVE_OPT(UNIFDEF) ? pclose(fstate.fp) : fclose(fstate.fp);
+
+    if (high_score > OPT_VALUE_HORRID_THRESHOLD)
+        res = COMPLEXITY_EXIT_HORRID_FUNCTION;
 
     return res;
 }
