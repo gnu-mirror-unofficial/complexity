@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-05-15 11:51:46 bkorb"
+ *  Time-stamp:        "2011-05-24 14:18:20 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -41,6 +41,7 @@ static int     high_score     = 0;
 static char const head_fmt[] =     "Complexity Scores\n"
     "Score | ln-ct | nc-lns| file-name(line): proc-name\n";
 static char const line_fmt[] =     "%5d  %6d  %6d   %s(%d): %s\n";
+static char const lnct_fmt[] =     "total nc-lns   %6d\n";
 static char const bad_line_fmt[] = "***** %6d %6d %s(%d): %s\n";
 static char const nomem_fmt[] =    "could not allocate %d bytes\n";
 
@@ -289,7 +290,9 @@ do_summary(complexity_exit_code_t exit_code)
     if (HAVE_OPT(HISTOGRAM)) {
         print_histogram();
         print_stats();
-    }
+
+    } else if (! HAVE_OPT(NO_HEADER))
+        printf(lnct_fmt, ttl_line_ct);
 }
 
 static FILE *

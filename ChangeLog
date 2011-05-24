@@ -1,3 +1,8 @@
+2011-05-24  Bruce Korb  <bkorb@gnu.org>
+
+	* src/complexity.c (do_summary): if stats are not being printed,
+	and if headers are not suppressed, then print line count totals.
+
 2011-05-15  Bruce Korb  <bkorb@gnu.org>
 
 	* src/opts.def (prog-title): Change per Karl Berry's request

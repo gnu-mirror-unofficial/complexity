@@ -65,7 +65,7 @@ Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
 [=(set-writable) (dne "")=]
 @end ignore
 
-@dircategory Programming Tools
+@dircategory Software development
 @direntry
 * Complexity: ([=prog-name=]).         [= prog-title =].
 @end direntry
