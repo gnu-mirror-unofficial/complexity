@@ -1,6 +1,6 @@
 
 /*  -*- Mode: conf -*-
- *  Time-stamp:        "2011-05-15 09:08:25 bkorb"
+ *  Time-stamp:        "2011-05-26 11:01:29 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -54,12 +54,12 @@ homerc      = '$@/complex.conf', '$HOME', '$PROJECT_ROOT/complex.conf', '.';
 
 explain = <<- _EOExplanation_
 	Compute the complexity of code by counting lines of non-comment source
-	and multiplying by a nested logic weight factor.  By default, 2.0.
+	and multiplying by a nested logic weight factor.  By default, 1.9.
 	_EOExplanation_;
 
 export = <<- _EOExport_
-	#define DEFAULT_PENALTY       2.0
-	#define DEFAULT_SCALE         20
+	#define DEFAULT_PENALTY       1.9
+	#define DEFAULT_SCALE         19
 
 	typedef double  score_t;
 	extern  score_t penalty;
@@ -132,7 +132,7 @@ flag = {
 
     doc = <<- _EODoc_
 	Linguistic constructs weigh more heavily the more deeply nested they
-	are.  By default, each layer penalizes by a factor of 2.0.  The option
+	are.  By default, each layer penalizes by a factor of 1.9.  The option
 	argument is a floating point number.  The penalty may be 1, but not less.
 	_EODoc_;
 };
@@ -381,7 +381,7 @@ doc-section = {
     ds-text   = <<- _END_MAN_DESCRIP
 	The weight of each statement is the number of lines the statement
 	uses.  This value is multiplied by the nested logic weighting
-	(2.0 by default) for each layer of logic.  For example, this snippet:
+	(1.9 by default) for each layer of logic.  For example, this snippet:
 
 	@example
 	if (foo) @{
@@ -415,5 +415,8 @@ doc-section = {
 
 	Some procedures still get missed.  Usually, these are procedures
 	that use the C pre-processor to extend the C language in some way.
+
+	Initialized variable definitions within procedures have the initializing
+	elements counted in the complexity calculation.
 	_END_MAN_DESCRIP;
 };

@@ -20,13 +20,20 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile doc/Makefile lib/Makefile src/Makefile tests/Makefile])
 
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([gnu check-news 1.5 dist-bzip2])
 LT_INIT
 AC_PROG_CC_C99
 CX_EARLY
 ag_FIND_LIBOPTS
 [test -z "${ao_LIBS}" &&] \
     AC_ERROR([libopts was not found])
+[
+if autogen -MF/tmp/ag-bogus-$$ --help >/dev/null
+then ag_cv_ag_supports_mf=true
+else ag_cv_ag_supports_mf=false
+fi
+]
+AM_CONDITIONAL([AG_MF],[$ag_cv_ag_supports_mf])
 AM_PROG_CC_C_O
 CX_INIT
 

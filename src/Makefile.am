@@ -2,7 +2,7 @@
 ##
 ## Makefile.am -- process this file with automake to produce Makefile.in
 ##
-## Time-stamp:      "2011-04-01 14:19:41 bkorb"
+## Time-stamp:      "2011-06-07 21:30:17 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 1992-2011 by Bruce Korb - all rights reserved
@@ -21,6 +21,7 @@
 ## with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 bin_PROGRAMS        = complexity
+bin_SCRIPTS         = cx-vs-mc
 option_def          = opts.def
 option_src          = $(option_def:.def=.c) $(option_def:.def=.h)
 charmap_map         = char-types.map
@@ -37,16 +38,21 @@ $(complexity_OBJECTS) : $(BUILT_SOURCE)
 complexity_CFLAGS   = $(ao_CFLAGS)
 complexity_LDADD    = $(ao_LIBS) $(gnulib)
 
-CLEANFILES          = *-stamp $(DEP_FILES)
-EXTRA_DIST          = $(option_def) $(charmap_map)
+CLEANFILES          = *-stamp $(DEP_FILES) $(bin_SCRIPTS)
+EXTRA_DIST          = $(option_def) $(charmap_map) cx-vs-mc.sh
 DISTCLEANFILES      = $(option_src)
 
 if AMDEP
-OPT_DEP             = -MF$(DEPDIR)/opts-dep -MT$@
-include $(DEPDIR)/opts-dep
-DEP_FILES           = $(DEPDIR)/opts-dep
+if  AG_MF
+    OPT_DEP         = -MF$(DEPDIR)/opts-dep -MT$@
+    DEP_FILES       = $(DEPDIR)/opts-dep
+-include $(DEPDIR)/opts-dep
+
 else
-OPT_DEP             =
+    OPT_DEP         =
+endif
+else
+  OPT_DEP           =
 endif
 
 $(option_src)       : option-stamp
@@ -56,5 +62,9 @@ option-stamp        : $(srcdir)/$(option_def)
 
 $(charmap_src)      : $(charmap_map)
 	char-mapper $(srcdir)/$(charmap_map)
+
+cx-vs-mc            : cx-vs-mc.sh
+	@-rm -f $@
+	cp $(srcdir)/cx-vs-mc.sh $@ && chmod 555 $@
 
 # end of Makefile.am

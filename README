@@ -1,0 +1,13 @@
+complexity
+==========
+
+I mostly try to keep information about this in docs that get put up
+on the web:
+  http://www.gnu.org/software/complexity/manual/html_node/index.html
+
+If there are omissions, please let me know.
+Provided you have the full installation of autogen:
+  http://www.gnu.org/software/autogen
+(including libopts and templates), then building and installing
+should be little more than:
+  configure && make && make install

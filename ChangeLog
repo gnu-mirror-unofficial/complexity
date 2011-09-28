@@ -2,6 +2,8 @@
 
 	* src/complexity.c (do_summary): if stats are not being printed,
 	and if headers are not suppressed, then print line count totals.
+	* src/opts.def: reduced default "nesting penalty" to 1.9.
+	It is a highly sensitive number and 2.0 was just a bit too high.
 
 2011-05-15  Bruce Korb  <bkorb@gnu.org>
 

@@ -128,19 +128,27 @@ breaking them up into multiple @code{if} statements, if convenient.
 @node    personal experience
 @section Personal Experience
 
-I have used @code{pmccabe} on a number of occasions.  For a first
-order approximation, it does okay.  However, I was interested in
-zeroing in on the modules that needed the most help and there were a
-lot of modules needing help.  I was finding I was looking at some
-functions where I ought to have been looking at others.  So, I put
-this together to see if there was a better correlation between what
-seemed like hard code to me and the score derived by an analysis tool.
+I have used @code{pmccabe} on a number of occasions.  For a first order
+approximation, it does okay.  However, I was interested in zeroing in on the
+modules that needed the most help and there were a lot of modules needing
+help.  I was finding I was looking at some functions where I ought to have
+been looking at others.  So, I put this together to see if there was a
+better correlation between what seemed like hard code to me and the score
+derived by an analysis tool.
 
-This has worked much better.  I ran @code{complexity} and
-@code{pmccabe} against several million lines of code.  I correlated
-the scores.  Where the two tools disagreed noticeably in relative
-ranking, I took a closer look.  I found that @file{complexity} did,
-indeed, seem to be more appropriate in its scoring.
+This has worked much better.  I ran @code{complexity} and @code{pmccabe}
+against several million lines of code.  I correlated the scores.  Where the
+two tools disagreed noticeably in relative ranking, I took a closer look.  I
+found that @file{complexity} did, indeed, seem to be more appropriate in its
+scoring.
+
+Also, I have included with this project a shell script (@code{cx-vs-mc}) for
+summarizing the differences between @code{pmccabe} and @code{complexity}.
+This script will run both tools, order the results of @code{pmccabe} and
+list the procedures that are ranked significantly differently.  By default,
+``significant'' means by more than 25% of the number of procedures scored.
+But it is adjustable.  @code{stderr} will also receive a list of procedures
+seen by one tool but not the other.
 
 @node    rationale summary
 @section Rationale Summary

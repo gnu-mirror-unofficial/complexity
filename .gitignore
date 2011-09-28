@@ -34,7 +34,6 @@ complexity.1
 /c++defs.h
 /warn-on-use.h
 /lib
-/m4
 /release
 autom4te.cache
 /git-version-gen
