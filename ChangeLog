@@ -1,3 +1,7 @@
+2012-11-23  Bruce Korb  <bkorb@gnu.org>
+
+	* bootstrap: replace with Gary Vaughan version.
+
 2011-05-24  Bruce Korb  <bkorb@gnu.org>
 
 	* src/complexity.c (do_summary): if stats are not being printed,
