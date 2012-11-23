@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-05-24 14:23:42 bkorb"
+ *  Time-stamp:        "2012-11-23 10:51:51 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -150,17 +150,17 @@ print_histogram(void)
         fwrite(hsthdr, sizeof(hsthdr) - 1, 1, stdout);
     }
 
-    int    min_score  = 0;
-    int    score_inc  = 10;
-    int    hi_score   = min_score + score_inc - 1;
-    bool_t skipping   = true;
-    bool_t first_line = true;
+    int  min_score  = 0;
+    int  score_inc  = 10;
+    int  hi_score   = min_score + score_inc - 1;
+    bool skipping   = true;
+    bool first_line = true;
 
     for (int ix = 0;
          ix < score_ix_lim;
          ix++, min_score = hi_score + 1, hi_score += score_inc) {
-        int    ct     = lines_scoring[ix];
-        bool_t put_nl = false;
+        int  ct     = lines_scoring[ix];
+        bool put_nl = false;
 
         switch (min_score) {
         case 90:  score_inc = 100;  put_nl = true; break;
@@ -358,7 +358,7 @@ popen_unifdef(char const * fname)
     }
 }
 
-static bool_t
+static bool
 load_file(fstate_t * fs)
 {
     unsigned long const pgsz = sysconf(_SC_PAGE_SIZE);
@@ -415,7 +415,7 @@ load_file(fstate_t * fs)
     return true;
 }
 
-static bool_t
+static bool
 add_score(state_t * pstate)
 {
     if (threshold > pstate->score)

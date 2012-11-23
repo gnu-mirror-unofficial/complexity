@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-04-02 14:18:17 bkorb"
+ *  Time-stamp:        "2012-11-23 10:50:12 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -23,7 +23,7 @@
 
 #include "opts.h"
 
-static bool_t
+static bool
 skip_comment(fstate_t * fs)
 {
     char const * p = fs->scan + 1; // skip the '*' from the "/*"
@@ -43,7 +43,7 @@ skip_comment(fstate_t * fs)
     }
 }
 
-static bool_t
+static bool
 skip_to_eol(fstate_t * fs)
 {
     while (! IS_END_OF_LINE_CHAR(*(++fs->scan)))   ;
@@ -400,7 +400,7 @@ extern_c_check(fstate_t * fs)
     return TKN_EMPTY;
 }
 
-static inline bool_t
+static inline bool
 next_nonblank(fstate_t * fs)
 {
     for (;;) {
@@ -550,10 +550,10 @@ skip_to_semi(fstate_t * fs)
     }
 }
 
-bool_t
+bool
 find_proc_start(fstate_t * fs)
 {
-    bool_t res = false;
+    bool res = false;
 
     for (;;) {
         token_t tkn = next_token(fs);

@@ -1,6 +1,10 @@
 2012-11-23  Bruce Korb  <bkorb@gnu.org>
 
 	* bootstrap: replace with Gary Vaughan version.
+	* src/complexity.h: use stdbool.h
+	* src/complexity.c: likewise
+	* src/score.c: likewise
+	* src/tokenize.c: likewise
 
 2011-05-24  Bruce Korb  <bkorb@gnu.org>
 

@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-05-15 11:00:49 bkorb"
+ *  Time-stamp:        "2012-11-23 10:51:13 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -67,7 +67,7 @@ static handler_func_t * score_fun[TOKEN_MAX] = {
 };
 
 static score_t
-handle_subexpr(state_t * sc, bool_t is_for_clause);
+handle_subexpr(state_t * sc, bool is_for_clause);
 
 static score_t
 bad_token(state_t * sc, char const * where, token_t ev)
@@ -220,7 +220,7 @@ fiddle_subexpr_score(subexpr_seen_t * ses)
 }
 
 static score_t
-handle_subexpr(state_t * sc, bool_t is_for_clause)
+handle_subexpr(state_t * sc, bool is_for_clause)
 {
     int saw_name = 0;
     int stline   = sc->ncln_ct;
@@ -354,15 +354,15 @@ static score_t
 handle_expression(state_t * sc)
 {
     score_t res = 1;
-    int stline = sc->ncln_ct;
-    bool_t paren_is_parms = true;
-    bool_t cbrace_needs_semi = false;
+    int stline  = sc->ncln_ct;
+    bool paren_is_parms    = true;
+    bool cbrace_needs_semi = false;
 
     for (;;) {
         token_t ltk = sc->fstate->last_tkn;
         token_t ev = next_score_token(sc);
-        bool_t next_paren_is_parms    = false;
-        bool_t next_cbrace_needs_semi = false;
+        bool next_paren_is_parms    = false;
+        bool next_cbrace_needs_semi = false;
 
         switch (ev) {
         case TKN_LIT_CBRACE:
@@ -643,7 +643,7 @@ static score_t
 handle_TKN_KW_FOR(state_t * sc)
 {
     score_t res;
-    bool_t  real_for = (sc->fstate->last_tkn == TKN_KW_FOR);
+    bool    real_for = (sc->fstate->last_tkn == TKN_KW_FOR);
     token_t ev = next_score_token(sc);
 
     if (ev != TKN_LIT_OPNPAREN)
@@ -734,7 +734,7 @@ handle_array_init(state_t * sc)
 void
 score_proc(state_t * score)
 {
-    static bool_t fix_dispatch = true;
+    static bool fix_dispatch = true;
 
     if (fix_dispatch) {
         int ix = 0;

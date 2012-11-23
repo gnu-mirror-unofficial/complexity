@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2011-05-15 11:10:06 bkorb"
+ *  Time-stamp:        "2012-11-23 10:49:26 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -29,6 +29,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <stdbool.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -38,8 +39,6 @@
 #include "char-types.h"
 
 #include "opts.h"
-
-typedef enum { false = 0, true = 1 } bool_t;
 
 #ifndef NUL
 # define NUL '\0'
@@ -103,7 +102,7 @@ typedef struct {
     char const *    fname;
     char const *    text;
     char const *    scan;
-    bool_t          bol;
+    bool            bol;
     token_t         last_tkn;
     char const *    tkn_text;
     size_t          tkn_len;
@@ -146,7 +145,7 @@ next_token(fstate_t * fs);
 extern void
 unget_token(fstate_t * fs);
 
-extern bool_t
+extern bool
 find_proc_start(fstate_t * fs);
 
 extern void
@@ -161,7 +160,7 @@ initialize(int argc, char ** argv);
 extern void
 do_summary(complexity_exit_code_t);
 
-extern void
+extern score_t
 score_proc(state_t * score);
 
 extern void
