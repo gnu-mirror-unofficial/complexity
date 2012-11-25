@@ -2,7 +2,7 @@
 ##
 ## Makefile.am -- process this file with automake to produce Makefile.in
 ##
-## Time-stamp:      "2011-06-07 21:30:17 bkorb"
+## Time-stamp:      "2012-11-25 14:10:43 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 1992-2011 by Bruce Korb - all rights reserved
@@ -26,7 +26,7 @@ option_def          = opts.def
 option_src          = $(option_def:.def=.c) $(option_def:.def=.h)
 charmap_map         = char-types.map
 charmap_src         = $(charmap_map:.map=.h)
-gnulib              = $(top_builddir)/lib/libgnu.la
+gnulib              = $(top_builddir)/lib/libgnu.a
 
 complexity_SOURCES  = \
 	complexity.h complexity.c score.c tokenize.c \
@@ -36,7 +36,7 @@ BUILT_SOURCE        = $(option_src)
 $(complexity_OBJECTS) : $(BUILT_SOURCE)
 
 complexity_CFLAGS   = $(ao_CFLAGS)
-complexity_LDADD    = $(ao_LIBS) $(gnulib)
+complexity_LDADD    = $(ao_LIBS) $(gnulib) -lm
 
 CLEANFILES          = *-stamp $(DEP_FILES) $(bin_SCRIPTS)
 EXTRA_DIST          = $(option_def) $(charmap_map) cx-vs-mc.sh

@@ -1,6 +1,6 @@
 
 /*  -*- Mode: conf -*-
- *  Time-stamp:        "2012-11-25 13:44:49 bkorb"
+ *  Time-stamp:        "2012-11-25 14:12:39 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -41,7 +41,7 @@ copyright   = {
 
 version     = `
  ver_file=${top_srcdir:-..}/.tarball-version
- ${ver_file}`;
+ cat ${ver_file}`;
 
 long-opts;
 gnu-usage;
