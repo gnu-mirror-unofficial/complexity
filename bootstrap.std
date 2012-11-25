@@ -1,0 +1,73 @@
+# -*- Mode: shell-script -*-
+
+typeset -r prog=$(basename "$0" .sh)
+typeset -r program=$(basename "$0")
+typeset -r progdir=$(\cd $(dirname "$0") && pwd -P)
+typeset -r progpid=$$
+
+# death rattle
+#
+die()
+{ 
+    echo "${prog} error:  $*"
+    backtrace
+    kill -TERM ${progpid}
+    exit 1
+} >&2
+
+# Leave here for anemic shells
+#
+test "$BASH_VERSION" = "" && {
+    backtrace() { : ; }
+    return
+}
+
+{
+    shopts=' '$(echo $(set -o))' '
+    bashopts=' '$(echo $(shopt))' '
+} 2>/dev/null
+
+# Specifically test for xtrace being set
+#
+case ":$SHELLOPTS:" in
+*:xtrace:* ) dashx=-x ;;
+* ) dashx= ;;
+esac
+
+# See if extdebug is supported
+#
+case "$bashopts" in
+*' extdebug '* )
+    shopt -s extdebug
+    backtrace() {
+        set +x
+        local ct=${#FUNCNAME[@]} fn ln sf ix width=0 fmt
+        for fn in ${FUNCNAME[*]}
+        do
+            (( width < ${#fn} )) && width=${#fn}
+        done
+
+        fmt="%-${width}s  from line and file"
+        printf "Call stack:\n$fmt\n" 'function'
+        fmt="%-${width}s %5d    %s\n"
+
+        for ((ix = 2 ; ix < ct ; ix++))
+        do
+            fn=${FUNCNAME[$((ix - 1))]}
+            if test "X$fn" = Xdie && $TRAPPED
+            then
+                sf='FAIL-EXIT TRAP'
+                ln=0
+            else
+                sf=$(basename ${BASH_SOURCE[$ix]})
+                ln=${BASH_LINENO[$((ix - 1))]}
+            fi
+            printf "$fmt" $fn $ln "$sf"
+        done
+        test ${#dashx} -gt 0 && set -x
+    }
+    ;;
+
+* ) backtrace() { for f in ${FUNCNAME[*]} ; do echo $f ; done ; }
+    ;;
+esac

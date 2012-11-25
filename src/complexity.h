@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2012-11-23 10:49:26 bkorb"
+ *  Time-stamp:        "2012-11-25 12:47:17 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -160,7 +160,7 @@ initialize(int argc, char ** argv);
 extern void
 do_summary(complexity_exit_code_t);
 
-extern score_t
+extern void
 score_proc(state_t * score);
 
 extern void
