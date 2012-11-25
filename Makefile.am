@@ -1,4 +1,7 @@
-ACLOCAL_AMFLAGS         = -I m4
-SUBDIRS                 = lib src doc tests
-DIST_SUBDIRS            = $(SUBDIRS)
-EXTRA_DIST              = bootstrap m4/gnulib-cache.m4 .tarball-version
+
+ACLOCAL_AMFLAGS     = -I m4
+SUBDIRS             = lib src doc tests
+DIST_SUBDIRS        = $(SUBDIRS)
+EXTRA_DIST          = bootstrap m4/gnulib-cache.m4 .tarball-version
+LIBTOOLIZE_ARGS	    = --copy --force
+AUTOMAKE_ARGS  	    = --add-missing --copy
