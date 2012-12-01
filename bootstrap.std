@@ -1,9 +1,10 @@
 # -*- Mode: shell-script -*-
 
-typeset -r prog=$(basename "$0" .sh)
-typeset -r program=$(basename "$0")
-typeset -r progdir=$(\cd $(dirname "$0") && pwd -P)
-typeset -r progpid=$$
+prog=`basename "$0" .sh`
+program=`basename "$0"`
+progdir=`cd \`dirname "$0"\` >/dev/null && pwd -P`
+progpid=$$
+readonly prog program progdir progpid
 
 # death rattle
 #
@@ -19,6 +20,7 @@ die()
 #
 test "$BASH_VERSION" = "" && {
     backtrace() { : ; }
+    unset xtrace
     return
 }
 
@@ -54,10 +56,10 @@ case "$bashopts" in
         for ((ix = 2 ; ix < ct ; ix++))
         do
             fn=${FUNCNAME[$((ix - 1))]}
-            if test "X$fn" = Xdie && $TRAPPED
+            if (( ix == 2 )) && $TRAPPED
             then
-                sf='FAIL-EXIT TRAP'
-                ln=0
+                sf=$sfile
+                ln=$sline
             else
                 sf=$(basename ${BASH_SOURCE[$ix]})
                 ln=${BASH_LINENO[$((ix - 1))]}
