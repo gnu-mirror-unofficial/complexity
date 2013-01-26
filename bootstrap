@@ -3,18 +3,18 @@
 # Bootstrap an Autotooled package from checked-out sources.
 # Written by Gary V. Vaughan, 2010
 
-# Copyright (C) 2010-2012 Free Software Foundation, Inc.
+# Copyright (C) 2010-2013 Free Software Foundation, Inc.
 # This is free software; see the source for copying conditions.  There is NO
 # warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 # Source required external libraries:
 # Set a version string for this script.
-scriptversion=2012-11-25.20; # UTC
+scriptversion=2012-10-21.11; # UTC
 
 # General shell script boiler plate, and helper functions.
 # Written by Gary V. Vaughan, 2004
 
-# Copyright (C) 2004-2012 Free Software Foundation, Inc.
+# Copyright (C) 2004-2013 Free Software Foundation, Inc.
 # This is free software; see the source for copying conditions.  There is NO
 # warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -143,7 +143,7 @@ fi
 # variables can be overridden by the user before calling a script that
 # uses them if a suitable command of that name is not already available
 # in the command search PATH.
-set -a
+
 : ${CP="cp -f"}
 : ${ECHO="$bs_echo"}
 : ${EGREP="grep -E"}
@@ -156,7 +156,7 @@ set -a
 : ${RM="rm -f"}
 : ${SED="sed"}
 : ${SHELL="${CONFIG_SHELL-/bin/sh}"}
-set +a
+
 
 ## -------------------- ##
 ## Useful sed snippets. ##
@@ -1181,7 +1181,7 @@ scriptversion=2012-10-21.11; # UTC
 # A portable, pluggable option parser for Bourne shell.
 # Written by Gary V. Vaughan, 2010
 
-# Copyright (C) 2010-2012 Free Software Foundation, Inc.
+# Copyright (C) 2010-2013 Free Software Foundation, Inc.
 # This is free software; see the source for copying conditions.  There is NO
 # warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -1786,7 +1786,7 @@ func_version ()
 # Extract macro arguments from autotools input with GNU M4.
 # Written by Gary V. Vaughan, 2010
 #
-# Copyright (C) 2010-2012 Free Software Foundation, Inc.
+# Copyright (C) 2010-2013 Free Software Foundation, Inc.
 # This is free software; see the source for copying conditions.  There is NO
 # warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -2203,7 +2203,7 @@ test extract-trace = "$progname" && func_main "$@"
 # End:
 
 # Set a version string for *this* script.
-scriptversion=2012-10-21.12; # UTC
+scriptversion=2013-01-20.16; # UTC
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -2278,11 +2278,12 @@ scriptversion=2012-10-21.12; # UTC
 # overridden, and export the result for child processes, but they are
 # handled by the function 'func_find_tool' and not defaulted in this
 # section.
-set -a
+
 : ${ACLOCAL="aclocal"}
 : ${AUTOCONF="autoconf"}
 : ${AUTOHEADER="autoheader"}
 : ${AUTOM4TE="autom4te"}
+: ${AUTOHEADER="autoheader"}
 : ${AUTOMAKE="automake"}
 : ${AUTOPOINT="autopoint"}
 : ${AUTORECONF="autoreconf"}
@@ -2296,7 +2297,17 @@ set -a
 : ${LN_S="ln -s"}
 : ${RM="rm"}
 : ${SED="sed"}
-set +a
+
+export ACLOCAL
+export AUTOCONF
+export AUTOHEADER
+export AUTOM4TE
+export AUTOHEADER
+export AUTOMAKE
+export AUTOPOINT
+export AUTORECONF
+export CONFIG_SHELL
+
 
 ## -------------- ##
 ## Configuration. ##
@@ -3205,7 +3216,7 @@ func_require_build_aux ()
       func_show_eval "mkdir '$build_aux'"
 
       test -n "$vc_ignore_files" \
-          || func_insert_sorted_if_absent "$build_aux" $vc_ignore_files
+          || func_insert_if_absent "$build_aux" $vc_ignore_files
     fi
 
     require_build_aux=:
@@ -3426,7 +3437,7 @@ func_require_dotgitmodules ()
         } >> .gitmodules
 
         test -n "$vc_ignore_files" \
-          || func_insert_sorted_if_absent ".gitmodules" $vc_ignore_files
+          || func_insert_if_absent ".gitmodules" $vc_ignore_files
       }
     }
 
@@ -3761,7 +3772,7 @@ func_require_macro_dir ()
       mkdir "$macro_dir" || func_permissions_error "$macro_dir"
 
       test -n "$vc_ignore_files" \
-        || func_insert_sorted_if_absent "$macro_dir" $vc_ignore_files
+        || func_insert_if_absent "$macro_dir" $vc_ignore_files
     fi
 
     require_macro_dir=:
@@ -4309,11 +4320,25 @@ func_truncate_cmd ()
 }
 
 
-# func_insert_sorted_if_absent STR FILE...
-# ----------------------------------------
-# If $STR is not already on a line by itself in $FILE, insert it,
+# func_gitignore_entries FILE...
+# ------------------------------
+# Strip blank and comment lines to leave significant entries.
+func_gitignore_entries ()
+{
+    $debug_cmd
+
+    sed -e '/^#/d' -e '/^$/d' "$@"
+}
+
+
+# func_insert_if_absent STR FILE...
+# ---------------------------------
+# If $STR is not already on a line by itself in $FILE, insert it, at the
+# start.  Entries are inserted at the start of the ignore list to ensure
+# existing entries starting with ! are not overridden.  Such entries
+# support whilelisting exceptions after a more generic blacklist pattern.
 # sorting the new contents of the file and replacing $FILE with the result.
-func_insert_sorted_if_absent ()
+func_insert_if_absent ()
 {
     $debug_cmd
 
@@ -4324,11 +4349,18 @@ func_insert_sorted_if_absent ()
     do
       test -f "$file" || touch "$file"
 
+      duplicate_entries=`func_gitignore_entries "$file" |sort |uniq -d`
+      test -n "$duplicate_entries" \
+          && func_error "duplicate entries in $file: " $duplicate_entries
+
       func_grep_q "$str" "$file" \
           && func_verbose "inserting '$str' into '$file'"
 
-      $bs_echo "$str" |sort -u - "$file" |func_cmp_s - "$file" \
-        || $bs_echo "$str" |sort -u - "$file" -o "$file" \
+      linesold=`func_gitignore_entries "$file" |wc -l`
+      linesnew=`$bs_echo "$str" \
+                |func_gitignore_entries - "$file" |sort -u |wc -l`
+      test $linesold -eq $linesnew \
+        || sed "1i\\$nl$str$nl" "$file" \
         || func_permissions_error "$file"
     done
 }
