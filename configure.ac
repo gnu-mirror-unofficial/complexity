@@ -16,7 +16,7 @@ AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile doc/Makefile lib/Makefile src/Makefile tests/Makefile])
 AC_CONFIG_AUX_DIR([build-aux])
 
-AM_INIT_AUTOMAKE([gnu check-news 1.5 dist-bzip2])
+AM_INIT_AUTOMAKE([gnu check-news 1.5 dist-xz])
 gl_INIT
 
 AC_PROG_CC_C99
