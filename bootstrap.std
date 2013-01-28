@@ -16,6 +16,124 @@ die()
     exit 1
 } >&2
 
+# append_all_gnulib_includes
+# ---------------------------------------------
+# Append all gnulib mandated header files to the end of the first
+# AC_CONFIG_HEADER{,S} file from $configure_ac.
+append_all_gnulib_includes ()
+{
+    $debug_cmd
+
+    func_extract_trace AC_CONFIG_HEADERS
+    test -n "$func_extract_trace_result" \
+        || func_extract_trace AC_CONFIG_HEADER
+
+    test -n "$func_extract_trace_result" || return
+
+    $require_all_gnulib_includes
+
+    test -n "$all_gnulib_includes" || return
+
+    set -- $func_extract_trace_result
+    header=$1
+
+    # Take care to honor config.h:config-h.in specifications.
+    case $header in
+    *:*) header=`echo $header |sed 's|^.*:||'` ;;
+    *)   header=$header.in ;;
+    esac
+
+    guard=$(basename $(pwd))_$header
+    guard=$(echo $guard | \
+        tr '[a-z]' '[A-Z]' | \
+        sed 's/[^A-Z0-9]/_/g')
+    func_verbose "appending gnulib includes to '$header'"
+    {
+        printf '#ifndef %s\n#define %s 1\n' $guard $guard
+        cat $header
+        echo "$all_gnulib_includes"
+        printf '#endif /* %s*/\n' $guard
+    } > ZZTEMP-$$
+    mv ZZTEMP-$$ $header
+}
+func_add_hook func_fini append_all_gnulib_includes
+
+# require_all_gnulib_includes
+# ---------------------------
+# Ensure `$all_gnulib_includes' contains a sorted uniquified list of
+# every gnulib mandated header file.
+func_require_all_gnulib_includes ()
+{
+    $debug_cmd
+
+    $require_gnulib_tool
+    require_all_gnulib_includes=:
+
+    test true = "$gnulib_tool" && return
+
+    $require_all_gnulib_modules
+    $require_gnulib_tool_base_options
+
+    gnulib_mode=--extract-include-directive
+    gnulib_tool_all_options="$gnulib_mode $gnulib_tool_base_options"
+    all_gnulib_includes=$(
+        $gnulib_tool $gnulib_tool_all_options $all_gnulib_modules | \
+            sed '/^$/d' | \
+            sort -u)
+
+    # put <> includes before "" includes
+    all_gnulib_includes=$(
+        echo "$all_gnulib_includes" | grep -v '"'
+        echo "$all_gnulib_includes" | grep '"' )
+
+    test -n "all_gnulib_includes" || \
+        func_verbose "found no gnulib includes"
+}
+require_all_gnulib_includes=func_require_all_gnulib_includes
+
+
+# require_all_gnulib_modules
+# --------------------------
+# Ensure `$all_gnulib_modules' contains the fully expanded list of
+# gnulib modules with dependencies expanded.
+func_require_all_gnulib_modules ()
+{
+    $debug_cmd
+
+    $require_gnulib_tool
+
+    test true = "$gnulib_tool" || {
+        $require_gnulib_tool_base_options
+
+        all_gnulib_modules=$gnulib_modules
+        gnulib_mode=--extract-dependencies
+        gnulib_tool_all_options="$gnulib_mode $gnulib_tool_base_options"
+        while :; do
+            my_add_modules=false
+            for module in $gnulib_modules; do
+                for depend in $(
+                    $gnulib_tool $gnulib_tool_all_options $module)
+                do
+                    case " "`echo $my_full_module_list`" " in
+                    *" $depend "*) ;;
+                    *) my_add_modules=:
+                        my_full_module_list="$my_full_module_list
+				$depend"
+                        ;;
+                    esac
+                done
+            done
+            $my_add_modules || break
+        done
+    }
+
+    test "$all_gnulib_modules" = "$gnulib_modules" || \
+        func_verbose 'recursively expanding $gnulib_modules list'
+
+    require_all_gnulib_modules=:
+}
+require_all_gnulib_modules=func_require_all_gnulib_modules
+
 # Leave here for anemic shells
 #
 test "$BASH_VERSION" = "" && {

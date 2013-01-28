@@ -1,6 +1,6 @@
 
 /*
- *  Time-stamp:        "2012-11-25 12:47:17 bkorb"
+ *  Time-stamp:        "2013-01-27 17:11:56 bkorb"
  *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011 by Bruce Korb - all rights reserved
@@ -22,22 +22,17 @@
 #ifndef COMPLEXITY_H_GUARD
 #define COMPLEXITY_H_GUARD
 
-#define _GNU_SOURCE 1
+#include "config.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include <ctype.h>
 #include <errno.h>
-#include <stdbool.h>
 #include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "char-types.h"
-
 #include "opts.h"
 
 #ifndef NUL
