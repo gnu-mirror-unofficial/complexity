@@ -9,7 +9,7 @@
 
 # Source required external libraries:
 # Set a version string for this script.
-scriptversion=2012-10-21.11; # UTC
+scriptversion=2013-03-08.12; # UTC
 
 # General shell script boiler plate, and helper functions.
 # Written by Gary V. Vaughan, 2004
@@ -94,46 +94,6 @@ nl='
 '
 IFS="	$sp$nl"
 
-# There are still modern systems that have problems with 'echo' mis-
-# handling backslashes, among others, so make sure $bs_echo is set to a
-# command that correctly interprets backslashes.
-# (this code from Autoconf 2.68)
-
-# Printing a long string crashes Solaris 7 /usr/bin/printf.
-bs_echo='\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\'
-bs_echo=$bs_echo$bs_echo$bs_echo$bs_echo$bs_echo
-bs_echo=$bs_echo$bs_echo$bs_echo$bs_echo$bs_echo$bs_echo
-# Prefer a ksh shell builtin over an external printf program on Solaris,
-# but without wasting forks for bash or zsh.
-if test -z "$BASH_VERSION$ZSH_VERSION" \
-    && (test "X`print -r -- $bs_echo`" = "X$bs_echo") 2>/dev/null; then
-  bs_echo='print -r --'
-  bs_echo_n='print -rn --'
-elif (test "X`printf %s $bs_echo`" = "X$bs_echo") 2>/dev/null; then
-  bs_echo='printf %s\n'
-  bs_echo_n='printf %s'
-else
-  if test "X`(/usr/ucb/echo -n -n $bs_echo) 2>/dev/null`" = "X-n $bs_echo"; then
-    bs_echo_body='eval /usr/ucb/echo -n "$1$nl"'
-    bs_echo_n='/usr/ucb/echo -n'
-  else
-    bs_echo_body='eval expr "X$1" : "X\\(.*\\)"'
-    bs_echo_n_body='eval
-      arg=$1;
-      case $arg in #(
-      *"$nl"*)
-	expr "X$arg" : "X\\(.*\\)$nl";
-	arg=`expr "X$arg" : ".*$nl\\(.*\\)"`;;
-      esac;
-      expr "X$arg" : "X\\(.*\\)" | tr -d "$nl"
-    '
-    export bs_echo_n_body
-    bs_echo_n='sh -c $bs_echo_n_body bs_echo'
-  fi
-  export bs_echo_body
-  bs_echo='sh -c $bs_echo_body bs_echo'
-fi
-
 
 ## ------------------------------- ##
 ## User overridable command paths. ##
@@ -145,7 +105,7 @@ fi
 # in the command search PATH.
 
 : ${CP="cp -f"}
-: ${ECHO="$bs_echo"}
+: ${ECHO='printf %s\n'}
 : ${EGREP="grep -E"}
 : ${FGREP="grep -F"}
 : ${GREP="grep"}
@@ -245,13 +205,13 @@ exit_status=$EXIT_SUCCESS
 progpath=$0
 
 # The name of this program.
-progname=`$bs_echo "$progpath" |$SED "$sed_basename"`
+progname=`$ECHO "$progpath" |$SED "$sed_basename"`
 
 # Make sure we have an absolute progpath for reexecution:
 case $progpath in
   [\\/]*|[A-Za-z]:\\*) ;;
   *[\\/]*)
-     progdir=`$bs_echo "$progpath" |$SED "$sed_dirname"`
+     progdir=`$ECHO "$progpath" |$SED "$sed_dirname"`
      progdir=`cd "$progdir" && pwd`
      progpath=$progdir/$progname
      ;;
@@ -445,7 +405,7 @@ func_append_uniq ()
 {
     $debug_cmd
 
-    eval _G_current_value='`$bs_echo $'$1'`'
+    eval _G_current_value='`$ECHO $'$1'`'
     _G_delim=`expr "$2" : '\(.\)'`
 
     case $_G_delim$_G_current_value$_G_delim in
@@ -558,7 +518,7 @@ func_echo ()
     IFS=$nl
     for _G_line in $_G_message; do
       IFS=$func_echo_IFS
-      $bs_echo "$progname: $_G_line"
+      $ECHO "$progname: $_G_line"
     done
     IFS=$func_echo_IFS
 }
@@ -592,8 +552,8 @@ func_echo_infix_1 ()
     for _G_tc in "$tc_reset" "$tc_bold" "$tc_standout" "$tc_red" "$tc_green" "$tc_blue" "$tc_cyan"
     do
       test -n "$_G_tc" && {
-        _G_esc_tc=`$bs_echo "$_G_tc" | sed "$sed_make_literal_regex"`
-        _G_indent=`$bs_echo "$_G_indent" | sed "s|$_G_esc_tc||g"`
+        _G_esc_tc=`$ECHO "$_G_tc" | sed "$sed_make_literal_regex"`
+        _G_indent=`$ECHO "$_G_indent" | sed "s|$_G_esc_tc||g"`
       }
     done
     _G_indent="$progname: "`echo "$_G_indent" | sed 's|.| |g'`"  " ## exclude from sc_prohibit_nested_quotes
@@ -602,7 +562,7 @@ func_echo_infix_1 ()
     IFS=$nl
     for _G_line in $_G_message; do
       IFS=$func_echo_infix_1_IFS
-      $bs_echo "$_G_prefix$tc_bold$_G_line$tc_reset" >&2
+      $ECHO "$_G_prefix$tc_bold$_G_line$tc_reset" >&2
       _G_prefix=$_G_indent
     done
     IFS=$func_echo_infix_1_IFS
@@ -1321,7 +1281,7 @@ func_remove_hook ()
 {
     $debug_cmd
 
-    eval ${1}_hooks='`$bs_echo "\$'$1'_hooks" |$SED "s| '$2'||"`'
+    eval ${1}_hooks='`$ECHO "\$'$1'_hooks" |$SED "s| '$2'||"`'
 }
 
 
@@ -1614,8 +1574,8 @@ func_fatal_help ()
 {
     $debug_cmd
 
-    eval \$bs_echo \""Usage: $usage"\"
-    eval \$bs_echo \""$fatal_help"\"
+    eval \$ECHO \""Usage: $usage"\"
+    eval \$ECHO \""$fatal_help"\"
     func_error ${1+"$@"}
     exit $EXIT_FAILURE
 }
@@ -1629,7 +1589,7 @@ func_help ()
     $debug_cmd
 
     func_usage_message
-    $bs_echo "$long_help_message"
+    $ECHO "$long_help_message"
     exit 0
 }
 
@@ -1716,7 +1676,7 @@ func_usage ()
     $debug_cmd
 
     func_usage_message
-    $bs_echo "Run '$progname --help |${PAGER-more}' for full usage"
+    $ECHO "Run '$progname --help |${PAGER-more}' for full usage"
     exit 0
 }
 
@@ -1728,7 +1688,7 @@ func_usage_message ()
 {
     $debug_cmd
 
-    eval \$bs_echo \""Usage: $usage"\"
+    eval \$ECHO \""Usage: $usage"\"
     echo
     $SED -n 's|^# ||
         /^Written by/{
@@ -1737,7 +1697,7 @@ func_usage_message ()
 	h
 	/^Written by/q' < "$progpath"
     echo
-    eval \$bs_echo \""$usage_message"\"
+    eval \$ECHO \""$usage_message"\"
 }
 
 
@@ -2025,8 +1985,8 @@ func_extract_trace ()
     $require_configure_ac
     $require_gnu_m4
 
-    _G_m4_traces=`$bs_echo "--trace=$1" |$SED 's%,% --trace=%g'`
-    _G_re_macros=`$bs_echo "($1)" |$SED 's%,%|%g'`
+    _G_m4_traces=`$ECHO "--trace=$1" |$SED 's%,% --trace=%g'`
+    _G_re_macros=`$ECHO "($1)" |$SED 's%,%|%g'`
     _G_macros="$1"; shift
     test $# -gt 0 || {
       set dummy $configure_ac
@@ -2128,7 +2088,7 @@ func_extract_trace ()
 
     # Save the command pipeline results for further use by callers of
     # this function.
-    func_extract_trace_result=`$bs_echo "$_G_mini" \
+    func_extract_trace_result=`$ECHO "$_G_mini" \
       |$M4 -daq --prefix $_G_m4_traces - "$@" 2>&1 1>/dev/null \
       |$SED -n -e "$_G_transform"`
 }
@@ -2144,7 +2104,7 @@ func_extract_trace_first ()
     $debug_cmd
 
     func_extract_trace ${1+"$@"}
-    func_extract_trace_first_result=`$bs_echo "$func_extract_trace_result" \
+    func_extract_trace_first_result=`$ECHO "$func_extract_trace_result" \
       |$SED -e 's|:.*$||g' -e 1q`
 }
 
@@ -2180,7 +2140,7 @@ on a separate line.'
 
     # Display results.
     test -n "$func_extract_trace_result" \
-        && $bs_echo "$func_extract_trace_result"
+        && $ECHO "$func_extract_trace_result"
 
     # The End.
     exit $EXIT_SUCCESS
@@ -2203,7 +2163,7 @@ test extract-trace = "$progname" && func_main "$@"
 # End:
 
 # Set a version string for *this* script.
-scriptversion=2013-01-20.16; # UTC
+scriptversion=2012-10-21.12; # UTC
 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -2772,13 +2732,6 @@ func_gnulib_tool_copy_file ()
 {
     $debug_cmd
 
-    $require_gnulib_path
-    $require_gnulib_tool
-    $require_patch
-
-    gnulib_copy_cmd="$gnulib_tool --copy-file"
-    $opt_copy || func_append gnulib_copy_cmd " --symlink"
-
     if test true = "$gnulib_tool"; then
       # If gnulib-tool is not available (e.g. bootstrapping in a
       # distribution tarball), make sure that at least we have some
@@ -2792,7 +2745,17 @@ or else specify the location of your 'git' binary by
 setting 'GIT' in the environment so that a fresh
 'gnulib' submodule can be cloned."
     else
-      test -f "$gnulib_path/$1" || {
+      $require_gnulib_path
+      $require_gnulib_tool
+      $require_local_gl_dir
+      $require_patch
+
+      gnulib_copy_cmd="$gnulib_tool --copy-file"
+      $opt_copy || func_append gnulib_copy_cmd " --symlink"
+      test -n "$local_gl_dir" \
+          && func_append gnulib_copy_cmd " --local-dir=$local_gl_dir"
+
+      $gnulib_copy_cmd $1 $2 2>/dev/null || {
         func_error "'$gnulib_path/$1' does not exist"
         return 1
       }
@@ -3216,7 +3179,7 @@ func_require_build_aux ()
       func_show_eval "mkdir '$build_aux'"
 
       test -n "$vc_ignore_files" \
-          || func_insert_if_absent "$build_aux" $vc_ignore_files
+          || func_insert_sorted_if_absent "$build_aux" $vc_ignore_files
     fi
 
     require_build_aux=:
@@ -3306,7 +3269,7 @@ func_require_buildreq_automake ()
 
       # ...and AM_INIT_AUTOMAKE is declared...
       test -n "$func_extract_trace_result" && {
-        automake_version=`$bs_echo "$func_extract_trace_result" \
+        automake_version=`$ECHO "$func_extract_trace_result" \
            |$SED -e 's|[^0-9]*||' -e 's| .*$||'`
         test -n "$automake_version" || automake_version=-
 
@@ -3337,6 +3300,8 @@ func_require_buildreq_patch ()
 
     # If patch is not already listed in $buildreq...
     printf '%s\n' "$buildreq" |func_grep_q '^[	 ]*patch' || {
+      $require_local_gl_dir
+
       # The ugly find invocation is necessary to exit with non-zero
       # status for old find binaries that don't support -exec fully.
       if test ! -d "$local_gl_dir" \
@@ -3437,7 +3402,7 @@ func_require_dotgitmodules ()
         } >> .gitmodules
 
         test -n "$vc_ignore_files" \
-          || func_insert_if_absent ".gitmodules" $vc_ignore_files
+          || func_insert_sorted_if_absent ".gitmodules" $vc_ignore_files
       }
     }
 
@@ -3723,6 +3688,28 @@ func_require_libtoolize ()
 }
 
 
+# require_local_gl_dir
+# --------------------
+require_local_gl_dir=func_require_local_gl_dir
+func_require_local_gl_dir ()
+{
+    $debug_cmd
+
+    # Only if local_gl_dir is not set already, and no gnulib_modules are
+    # listed is gnulib-cache.m4 the definitive value for local_gl_dir.
+    test -n "$local_gl_diri$gnulib_modules" || {
+      $require_gnulib_cache
+
+      func_extract_trace gl_LOCAL_DIR $gnulib_cache
+      local_gl_dir=$func_extract_trace_result
+    }
+
+    func_verbose "found gnulib overrides in '$local_gl_dir'"
+
+    require_local_gl_dir=:
+}
+
+
 # require_macro_dir
 # -----------------
 # Ensure that '$macro_dir' is set, and if it doesn't already point to an
@@ -3772,7 +3759,7 @@ func_require_macro_dir ()
       mkdir "$macro_dir" || func_permissions_error "$macro_dir"
 
       test -n "$vc_ignore_files" \
-        || func_insert_if_absent "$macro_dir" $vc_ignore_files
+        || func_insert_sorted_if_absent "$macro_dir" $vc_ignore_files
     fi
 
     require_macro_dir=:
@@ -4070,7 +4057,7 @@ func_ifcontains ()
     $debug_cmd
 
     # The embedded echo is to squash whitespace before globbing.
-    _G_wslist=`$bs_echo " "$1" "`
+    _G_wslist=`$ECHO " "$1" "`
     _G_member=$2
     _G_yes_cmd=$3
     _G_no_cmd=${4-":"}
@@ -4098,7 +4085,7 @@ func_strpad ()
     $debug_cmd
 
     _G_width=`expr "$2" - 1`
-    func_strpad_result=`$bs_echo "$1" |$SED '
+    func_strpad_result=`$ECHO "$1" |$SED '
         :a
         s|^.\{0,'"$_G_width"'\}$|&'"$3"'|
         ta
@@ -4115,7 +4102,7 @@ func_strrpad ()
     $debug_cmd
 
     _G_width=`expr "$2" - 1`
-    func_strrpad_result=`$bs_echo "$1" |$SED '
+    func_strrpad_result=`$ECHO "$1" |$SED '
         :a
         s|^.\{0,'"$_G_width"'\}$|'"$3"'&|
         ta
@@ -4200,7 +4187,7 @@ func_strtable ()
 
     # Strip off the indent, and make a divider with '-' chars, then
     # reindent.
-    _G_divider=`$bs_echo "$func_strrow_result" \
+    _G_divider=`$ECHO "$func_strrow_result" \
         |$SED 's|[^ ]|-|g
             :a
             s|- |--|g
@@ -4320,25 +4307,11 @@ func_truncate_cmd ()
 }
 
 
-# func_gitignore_entries FILE...
-# ------------------------------
-# Strip blank and comment lines to leave significant entries.
-func_gitignore_entries ()
-{
-    $debug_cmd
-
-    sed -e '/^#/d' -e '/^$/d' "$@"
-}
-
-
-# func_insert_if_absent STR FILE...
-# ---------------------------------
-# If $STR is not already on a line by itself in $FILE, insert it, at the
-# start.  Entries are inserted at the start of the ignore list to ensure
-# existing entries starting with ! are not overridden.  Such entries
-# support whilelisting exceptions after a more generic blacklist pattern.
+# func_insert_sorted_if_absent STR FILE...
+# ----------------------------------------
+# If $STR is not already on a line by itself in $FILE, insert it,
 # sorting the new contents of the file and replacing $FILE with the result.
-func_insert_if_absent ()
+func_insert_sorted_if_absent ()
 {
     $debug_cmd
 
@@ -4349,18 +4322,11 @@ func_insert_if_absent ()
     do
       test -f "$file" || touch "$file"
 
-      duplicate_entries=`func_gitignore_entries "$file" |sort |uniq -d`
-      test -n "$duplicate_entries" \
-          && func_error "duplicate entries in $file: " $duplicate_entries
-
       func_grep_q "$str" "$file" \
           && func_verbose "inserting '$str' into '$file'"
 
-      linesold=`func_gitignore_entries "$file" |wc -l`
-      linesnew=`$bs_echo "$str" \
-                |func_gitignore_entries - "$file" |sort -u |wc -l`
-      test $linesold -eq $linesnew \
-        || sed "1i\\$nl$str$nl" "$file" \
+      $ECHO "$str" |sort -u - "$file" |func_cmp_s - "$file" \
+        || $ECHO "$str" |sort -u - "$file" -o "$file" \
         || func_permissions_error "$file"
     done
 }
@@ -4425,7 +4391,7 @@ func_get_version ()
 
     # Rather than uncomment the sed script in-situ, strip the comments
     # programatically before passing the result to $SED for evaluation.
-    sed_get_version=`$bs_echo '# extract version within line
+    sed_get_version=`$ECHO '# extract version within line
           s|.*[v ]\{1,\}\([0-9]\{1,\}\.[.a-z0-9-]*\).*|\1|
           t done
 
