@@ -3,7 +3,6 @@ AC_INIT([Complexity],
     [bkorb@gnu.org])
 
 AS_BOX([Configuring AC_PACKAGE_TARNAME AC_PACKAGE_VERSION])
-AC_USE_SYSTEM_EXTENSIONS
 
 dnl we can't use AC_CONFIG_AUX_DIR here, because the heuristics
 dnl for finding install-sh in the generated configure script
@@ -15,8 +14,9 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_FILES([Makefile doc/Makefile lib/Makefile src/Makefile tests/Makefile])
 AC_CONFIG_AUX_DIR([build-aux])
-
+AC_CONFIG_SRCDIR([src/complexity.c])
 AM_INIT_AUTOMAKE([gnu check-news 1.5 dist-xz])
+AC_USE_SYSTEM_EXTENSIONS
 gl_INIT
 
 AC_PROG_CC_C99
