@@ -62,9 +62,7 @@ cat >&3 <<_EOF_
 ${project} home:  http://www.gnu.org/software/${project}/
 primary ftp:     ${ftpurl}/
 .tar.gz:         ${ftpurl}/${project}-${version}.tar.gz
-bug reports:     bug-gnu-utils at the usual GNU domain
-                 (be sure to mention "${project}" in the subject...
-                 it helps to spot the message.)
+bug reports:     bkorb at the usual GNU domain
 bug archive:     http://lists.gnu.org/mailman/listinfo/bug-gnu-utils/
 maintainer:      ${fullname} - ${sender} at the usual GNU domain
 _EOF_
