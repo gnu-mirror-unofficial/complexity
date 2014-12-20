@@ -2,8 +2,6 @@
 ##
 ## Makefile.am -- process this file with automake to produce Makefile.in
 ##
-## Time-stamp:      "2012-11-25 14:10:43 bkorb"
-##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 1992-2011, 2014 by Bruce Korb - all rights reserved
 ##

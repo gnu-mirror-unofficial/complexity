@@ -1,7 +1,5 @@
 
 /*
- *  Time-stamp:        "2012-11-23 10:51:13 bkorb"
- *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
  *

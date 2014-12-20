@@ -1,7 +1,5 @@
 
 /*
- *  Time-stamp:        "2012-11-23 10:50:12 bkorb"
- *
  *  This file is part of Complexity.
  *  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
  *
@@ -112,18 +110,16 @@ hash_check(fstate_t * fs)
         switch (*s) {
         case '\\':
             ch = *++s;
-            if (ch == NUL)
-                ; /* FALLTHROUGH */
-
-            else {
-                if (ch == NL)
-                    fs->cur_line++;
-
-                break; // ignore the character whatever it is.
+            switch (ch) {
+            case NUL:
+                goto eof_token;
+            case NL:
+                fs->cur_line++;
             }
-            /* FALLTHROUGH */
+            break; // ignore the character whatever it is.
 
         case NUL:
+        eof_token:
             res = TKN_EOF;
             goto leave;
 
@@ -140,11 +136,10 @@ hash_check(fstate_t * fs)
 
             case '/': // "C++" comment to end of line
                 fs->scan = s;
-                if (! skip_to_eol(fs)) {
+                if (! skip_to_eol(fs))
                     res = TKN_EOF;
-                    goto leave;
-                }
-                /* FALLTHROUGH */
+                s = fs->scan;
+                goto leave;
 
             case NL:
                 goto leave;

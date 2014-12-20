@@ -1,9 +1,7 @@
 
 /*
- *  Time-stamp:        "2013-01-27 17:11:56 bkorb"
- *
  *  This file is part of Complexity.
- *  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
+ *  Complexity Copyright (c) 2011-2014 by Bruce Korb - all rights reserved
  *
  *  Complexity is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
