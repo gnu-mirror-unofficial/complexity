@@ -1,3 +1,15 @@
+New in 1.3 - October 2015
+
+* src/complexity.c: explicitly include headers that are needed but
+  usually included by config.h.
+  (die): It is claimed that va_start() may expand to unbalanced
+  opening braces, so add va_end().  This is not true, but added
+  va_end() for balance anyway.
+* doc/Makefile.am: add "mk.sh" to EXTRA_DIST
+* incorporate a spelling fix from autogen
+
+New in 1.2
+
 * Programming / configuration cleanups
 
 * Print scaling factors in output header
