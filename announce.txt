@@ -51,11 +51,11 @@ exec 4< NEWS
 while read -u4 text
 do
   case "${text}" in
-  Version* ) break ;; esac  
+  *'New in '* ) break ;; esac  
 done
 
 printf "${text}" >&3
-sed '/^Version/,$d;//d' >&3 <&4
+sed '/^New in /,$d;//d' >&3 <&4
 exec 4<&-
 
 cat >&3 <<_EOF_
