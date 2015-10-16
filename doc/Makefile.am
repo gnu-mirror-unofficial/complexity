@@ -1,8 +1,6 @@
 
 ## Makefile.am -- process this file with automake to produce Makefile.in
 ##
-## Time-stamp:      "2012-11-25 14:54:49 bkorb"
-##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
 ##
@@ -40,7 +38,7 @@ CLEANFILES          = *-stamp $(DEP_FILES) invoke-complexity.*
 TEXI2DVI_FLAGS      = --texinfo='@pagesizes 9.5in,7.0in'
 info_TEXINFOS       = $(exe).texi
 EXTRA_DIST          = $(exe)-tpl.texi fdl.texi intro.texi compute.texi \
-	gendocs_template invoke-$(exe).texi texi-stamp
+	gendocs_template invoke-$(exe).texi texi-stamp mk.sh
 DISTCLEANFILES      = $(BUILT_SOURCES) $(man_MANS)
 
 $(man_MANS)         : $(optdefs)

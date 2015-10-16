@@ -21,6 +21,9 @@
 
 #include "opts.h"
 #include <math.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <limits.h>
 
 #ifndef UNIFDEF_EXE
 #define UNIFDEF_EXE "unifdef"
@@ -64,6 +67,8 @@ die(complexity_exit_code_t code, char const * fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     vdie(code, fmt, ap);
+    // NOTREACHED
+    va_end(ap);
 }
 
 void
@@ -208,6 +213,8 @@ print_histogram(void)
         if (put_nl)
             putc(NL, stdout);
     }
+
+    free(lines_scoring);
 }
 
 static void

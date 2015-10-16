@@ -5,7 +5,6 @@ texi
 ##  Documentation template
 ##
 ## Author:            Bruce Korb <bkorb@gnu.org>
-## Time-stamp:        "2011-05-15 09:09:59 bkorb"
 ##
 ##  This file is part of Complexity.
 ##  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
@@ -125,7 +124,7 @@ going into the complexity source directory and running the command:
 src=\`cd ${top_srcdir}/src && pwd\`
 bld=\`cd ${top_builddir}/src && pwd\`
 cmd='complexity --histogram --score --thresh=3'
-echo "$cmd '*.c'"
+echo "$cmd *.c"
 `=]
 @end example
 
