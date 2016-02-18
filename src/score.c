@@ -764,8 +764,10 @@ score_proc(state_t * score)
 
     if (score->score < MAX_SCORE)
         score->score = (score_t)(unsigned int)((score->score * scaling) + 0.9);
-    score->ln_ct--;
-    score->ncln_ct--;
+    if (--score->ln_ct <= 0)
+        score->ln_ct = 1;
+    if (--score->ncln_ct <= 0)
+        score->ncln_ct = 1;
 }
 /*
  * Local Variables:
