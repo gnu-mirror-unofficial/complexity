@@ -29,5 +29,5 @@ digit       "0-9"
 name-start  "_$" +alpha
 name        "$" +name-start +digit
 space       " \t\b\r\v\f\n"
-end-of-line "\n\0"
+end-of-line "\n\r\0"
 star-or-nl  "*" +end-of-line
