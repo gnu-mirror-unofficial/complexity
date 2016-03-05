@@ -1,11 +1,14 @@
 #! /bin/sh
 
 fail_exit() {
-    ct=0
+    set +x
+    ct=1
     while IFS='' read -r line
     do
         printf "%03u - %s\n" $ct "$line"
+        (( ct++ ))
     done < ${outfile}
+    trap '' 0
     exit 1
 } 1>&2
 
@@ -41,10 +44,10 @@ test $lc -eq 2 || {
     exit 1
 }
 
-lc=`grep -E '^ +0 ' ${outfile} | wc -l`
-test $lc -ge 5 || {
-    echo "did not find enough zero scoring procedures: " $lc >&2
-    exit 1
+lc=`grep -E '^ +0.*: +handle_noop' ${outfile} | wc -l`
+test $lc -eq 1 || {
+    echo "'handle_noop' did not evaluate to zero" >&2
+    fail_exit
 }
 
 $cpx -t0 $samples > ${outfile} 2>&1

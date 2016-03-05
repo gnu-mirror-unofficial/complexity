@@ -47,6 +47,7 @@ typedef score_t (handler_func_t)(state_t *);
 #define handle_TKN_LIT_CLSPAREN handle_invalid
 #define handle_TKN_LIT_COMMA    handle_noop
 #define handle_TKN_LIT_COLON    handle_invalid
+#define handle_TKN_LIT_QUESTION handle_expression
 #define handle_TKN_LIT_CLSBRACK handle_invalid
 #define handle_TKN_LIT_OPNBRACK handle_array_init
 #define handle_TKN_LIT_CBRACE   handle_invalid
@@ -87,20 +88,24 @@ bad_token(state_t * sc, char const * where, token_t ev)
         p = invbuf;
     }
 
-    fprintf(stderr, msgfmt, sc->ln_ct, sc->pname, sc->st_fstate->fs_fname,
-            sc->proc_line + sc->ln_ct, where, p, ev);
+    fprintf(stderr, msgfmt, sc->st_line_ct, sc->pname, sc->st_fstate->fs_fname,
+            sc->proc_line + sc->st_line_ct, where, p, ev);
     return MAX_SCORE;
 }
 
 static token_t
 next_score_token(state_t * sc)
 {
-    token_t tk = next_token(sc->st_fstate);
-    if ((tk == TKN_EOF) || (sc->st_fstate->fs_scan > sc->st_end))
+    fstate_t * fs = sc->st_fstate;
+    token_t    tk = next_token(fs);
+
+    if ((tk == TKN_EOF) || (fs->fs_scan > sc->st_end))
         longjmp(bail_on_proc, 1);
 
-    sc->ln_ct   = sc->st_fstate->cur_line - sc->ln_st;
-    sc->ncln_ct = sc->st_fstate->nc_line  - sc->ncln_st;
+    sc->st_line_ct = fs->cur_line - sc->ln_st;
+
+    sc->st_non_comment_line_ct =
+        fs->nc_line - sc->st_non_comment_line_ct;
 
     if (tk != TKN_KW_GOTO)
         return tk;
@@ -218,10 +223,16 @@ fiddle_subexpr_score(subexpr_seen_t * ses)
 }
 
 static score_t
+handle_TKN_LIT_SEMI(state_t * sc)
+{
+    return 1;
+}
+
+static score_t
 handle_subexpr(state_t * sc, bool is_for_clause)
 {
     int saw_name = 0;
-    int stline   = sc->ncln_ct;
+    int stline   = sc->st_non_comment_line_ct;
     subexpr_seen_t ses = { 0, 0, 0, 0, 1.0 };
     int tkn_ct   =  0;
 
@@ -236,7 +247,7 @@ handle_subexpr(state_t * sc, bool is_for_clause)
 
             if (! is_for_clause)
                 fiddle_subexpr_score(&ses);
-            ses.res += (score_t)(sc->ncln_ct - stline);
+            ses.res += (score_t)(sc->st_non_comment_line_ct - stline);
             if (ses.res > 1)
                 ses.res -= 1;
             if (HAVE_OPT(TRACE))
@@ -285,6 +296,7 @@ handle_subexpr(state_t * sc, bool is_for_clause)
         case TKN_NUMBER:
         case TKN_ARITH_OP:
         case TKN_LIT_COLON:
+        case TKN_LIT_QUESTION:
             break;
 
         case TKN_LIT_OBRACE:
@@ -312,13 +324,13 @@ static score_t
 handle_parms(state_t * sc)
 {
     score_t res = 0;
-    int stline = sc->ncln_ct - 1;
+    int stline = sc->st_non_comment_line_ct - 1;
 
     for (;;) {
         token_t ev = next_score_token(sc);
         switch (ev) {
         case TKN_LIT_CLSPAREN:
-            return (score_t)(sc->ncln_ct - stline) + res;
+            return (score_t)(sc->st_non_comment_line_ct - stline) + res;
 
         case TKN_LIT_OPNPAREN:
         {
@@ -351,7 +363,7 @@ static score_t
 handle_expression(state_t * sc)
 {
     score_t res = 1;
-    int stline  = sc->ncln_ct;
+    int stline  = sc->st_non_comment_line_ct;
     bool paren_is_parms    = true;
     bool cbrace_needs_semi = false;
 
@@ -417,10 +429,17 @@ handle_expression(state_t * sc)
 
         case TKN_LIT_COLON:
             /*
-             * A name followed by a colon is a statement label.
+             * A name followed by a colon is a statement label, unless
+             * we are in the middle of a ternary operation.
              */
-            if (ltk ==TKN_NAME)
+            if (sc->st_colon_need > 0) {
+                sc->st_colon_need--;
+            } else if (ltk ==TKN_NAME)
                 goto done;
+            break;
+
+        case TKN_LIT_QUESTION:
+            sc->st_colon_need++;
             break;
 
         case TKN_NUMBER:
@@ -435,7 +454,7 @@ handle_expression(state_t * sc)
 
 done:
     {
-        score_t min = 1 + (sc->ncln_ct - stline);
+        score_t min = 1 + (sc->st_non_comment_line_ct - stline);
         if (res < min)
             res = min;
         else if (res > MAX_SCORE)
@@ -694,12 +713,6 @@ handle_TKN_KW_FOR(state_t * sc)
 }
 
 static score_t
-handle_TKN_LIT_SEMI(state_t * sc)
-{
-    return 1;
-}
-
-static score_t
 handle_bracket_expr(state_t * sc)
 {
     score_t res = 0;
@@ -766,10 +779,10 @@ score_proc(state_t * score)
 
     if (score->score < MAX_SCORE)
         score->score = (score_t)(unsigned int)((score->score * scaling) + 0.9);
-    if (--score->ln_ct <= 0)
-        score->ln_ct = 1;
-    if (--score->ncln_ct <= 0)
-        score->ncln_ct = 1;
+    if (--score->st_line_ct <= 0)
+        score->st_line_ct = 1;
+    if (--score->st_non_comment_line_ct <= 0)
+        score->st_non_comment_line_ct = 1;
 }
 /*
  * Local Variables:

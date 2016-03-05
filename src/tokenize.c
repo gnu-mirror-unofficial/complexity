@@ -455,23 +455,24 @@ next_token(fstate_t * fs)
         case '#':  res = hash_check(   fs); break;
         case '%':  res = assign_check( fs); break;
         case '&':  res = amph_check(   fs); break;
-        case '\'': res = sglquot_check(fs); break;
         case '*':  res = assign_check( fs); break;
         case '+':  res = plus_check(   fs); break;
         case '-':  res = hyphen_check( fs); break;
+        case '.':  res = dot_check(    fs); break;
         case '/':  res = slash_check(  fs); break;
         case '<':  res = less_check(   fs); break;
         case '=':  res = equal_check(  fs); break;
         case '>':  res = greater_check(fs); break;
+        case '\'': res = sglquot_check(fs); break;
         case '^':  res = carat_check(  fs); break;
         case '|':  res = vertbar_check(fs); break;
-        case '.':  res = dot_check(    fs); break;
 
         case '(':  res = TKN_LIT_OPNPAREN;  break;
         case ')':  res = TKN_LIT_CLSPAREN;  break;
         case ',':  res = TKN_LIT_COMMA;     break;
         case ':':  res = TKN_LIT_COLON;     break;
         case ';':  res = TKN_LIT_SEMI;      break;
+        case '?':  res = TKN_LIT_QUESTION;  break;
         case '[':  res = TKN_LIT_OPNBRACK;  break;
         case ']':  res = TKN_LIT_CLSBRACK;  break;
         case '{':  res = TKN_LIT_OBRACE;    break;
@@ -479,7 +480,7 @@ next_token(fstate_t * fs)
 
         case '\\': res = TKN_EMPTY;         break;
 
-        case '?':
+
         case '~':  res = TKN_ARITH_OP;      break;
 
         case '@':

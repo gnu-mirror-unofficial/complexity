@@ -139,7 +139,7 @@ print_histogram(void)
     for (int ix = 0; ix < score_ct; ix++) {
         int score_ix = hash_score(scores[ix]->score);
 
-        lines_scoring[score_ix] += scores[ix]->ncln_ct;
+        lines_scoring[score_ix] += scores[ix]->st_non_comment_line_ct;
         if (lines_scoring[score_ix] > max_ct)
             max_ct = lines_scoring[score_ix];
     }
@@ -227,7 +227,7 @@ print_stats(void)
     int     pct_thresh   = pct_ct;
 
     for (ix = 0; ix < score_ct; ix++) {
-        counter += scores[ix]->ncln_ct;
+        counter += scores[ix]->st_non_comment_line_ct;
 
         if (counter >= pct_thresh) {
             pctile[pct_ix++] = (int)(scores[ix]->score + 0.5);
@@ -252,10 +252,10 @@ compare_score(void const * a, void const * b)
     int res = (int)(A->score - B->score);
     if (res != 0)
         return res;
-    res = A->ncln_ct - B->ncln_ct;
+    res = A->st_non_comment_line_ct - B->st_non_comment_line_ct;
     if (res != 0)
         return res;
-    return A->ln_ct - B->ln_ct;
+    return A->st_line_ct - B->st_line_ct;
 }
 
 void
@@ -268,7 +268,8 @@ do_summary(complexity_exit_code_t exit_code)
 
         for (int ix = 0; ix < score_ct; ix++) {
             int val = scores[ix]->score + 0.5;
-            printf(line_fmt, val, scores[ix]->ln_ct, scores[ix]->ncln_ct,
+            printf(line_fmt, val, scores[ix]->st_line_ct,
+                   scores[ix]->st_non_comment_line_ct,
                    scores[ix]->st_end, scores[ix]->ln_st, scores[ix]->pname);
         }
     }
@@ -512,11 +513,11 @@ do_proc(fstate_t * fs)
     if (! add_score(pstate))
         goto skip_proc;
 
-    if (pstate->ncln_ct == 0) {
+    if (pstate->st_non_comment_line_ct == 0) {
         pstate->score = 0;
     } else {
-        score_ttl   += (pstate->score * pstate->ncln_ct);
-        ttl_line_ct += pstate->ncln_ct;
+        score_ttl   += (pstate->score * pstate->st_non_comment_line_ct);
+        ttl_line_ct += pstate->st_non_comment_line_ct;
     }
 
     if (++score_ct >= score_alloc_ct) {

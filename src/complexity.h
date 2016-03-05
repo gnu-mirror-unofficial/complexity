@@ -69,6 +69,7 @@
     _Ttbl_(',', TKN_LIT_COMMA)          \
     _Ttbl_(':', TKN_LIT_COLON)          \
     _Ttbl_(';', TKN_LIT_SEMI)           \
+    _Ttbl_('?', TKN_LIT_QUESTION)       \
     _Ttbl_('[', TKN_LIT_OPNBRACK)       \
     _Ttbl_(']', TKN_LIT_CLSBRACK)       \
     _Ttbl_('{', TKN_LIT_OBRACE)         \
@@ -105,13 +106,14 @@ typedef struct {
 } fstate_t;
 
 typedef struct {
-    int             ln_ct;
-    int             ncln_ct;
+    int             st_line_ct;
+    int             st_non_comment_line_ct;
     int             ln_st;
     int             ncln_st;
-    score_t         score;
     int             goto_ct;
     int             proc_line;
+    int             st_colon_need;
+    score_t         score;
     char *          st_end;
     fstate_t *      st_fstate;
     char            pname[256];
@@ -121,8 +123,8 @@ static inline void state_init(state_t * st, fstate_t * fs)
 {
     memset(st, NUL, sizeof(*st));
     st->ln_st     = fs->cur_line;
-    st->ncln_st   = fs->nc_line;
     st->st_fstate = fs;
+    st->st_non_comment_line_ct = fs->nc_line;
     if (fs->tkn_len >= sizeof(st->pname))
         fs->tkn_len = sizeof(st->pname) - 1;
     memcpy(st->pname, fs->tkn_text, fs->tkn_len);
