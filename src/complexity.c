@@ -453,10 +453,29 @@ static bool
 find_proc_end(state_t * ps, regex_t * re)
 {
     regmatch_t match;
-    if (regexec(re, ps->st_fstate->fs_scan, 1, &match, 0) != 0)
+    char * scan = BRK_END_OF_LINE_CHARS(ps->st_fstate->fs_scan);
+
+    /*
+     * special case a one-line function (where opening and closing
+     * braces are on the same line).
+     */
+    {
+        char * close_brace = strchr(ps->st_fstate->fs_scan, '}');
+        if (close_brace == NULL)
+            return false;
+
+        if (close_brace < scan) {
+            ps->st_end = close_brace + 1; // same line
+            return true;
+        }
+    }
+
+    /*
+     * run the regex looking for a CR or LF preceding a '}'
+     */
+    if (regexec(re, scan, 1, &match, 0) != 0)
         return false;
-    ps->st_end = (void *)(uintptr_t)
-        (ps->st_fstate->fs_scan + match.rm_eo);
+    ps->st_end = scan + match.rm_eo;
     return true;
 }
 
