@@ -1,7 +1,7 @@
 
 /*
  *  This file is part of Complexity.
- *  Complexity Copyright (c) 2011-2014 by Bruce Korb - all rights reserved
+ *  Complexity Copyright (c) 2011-2016 by Bruce Korb - all rights reserved
  *
  *  Complexity is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -91,11 +91,11 @@ typedef enum { TOKEN_TABLE TOKEN_MAX } token_t;
     _Ktbl_(while,   TKN_KW_WHILE)
 
 typedef struct {
-    FILE *          fp;
-    char const *    fname;
-    char const *    text;
-    char const *    scan;
-    bool            bol;
+    FILE *          fs_fp;
+    char const *    fs_fname;
+    char const *    fs_text;
+    char const *    fs_scan;
+    bool            fs_bol;
     token_t         last_tkn;
     char const *    tkn_text;
     size_t          tkn_len;
@@ -112,16 +112,20 @@ typedef struct {
     score_t         score;
     int             goto_ct;
     int             proc_line;
-    char *          end;
-    fstate_t *      fstate;
+    char *          st_end;
+    fstate_t *      st_fstate;
     char            pname[256];
 } state_t;
 
-static inline void state_init(state_t * st, fstate_t * fs) {
+static inline void state_init(state_t * st, fstate_t * fs)
+{
     memset(st, NUL, sizeof(*st));
-    st->ln_st   = fs->cur_line;
-    st->ncln_st = fs->nc_line;
-    st->fstate  = fs;
+    st->ln_st     = fs->cur_line;
+    st->ncln_st   = fs->nc_line;
+    st->st_fstate = fs;
+    if (fs->tkn_len >= sizeof(st->pname))
+        fs->tkn_len = sizeof(st->pname) - 1;
+    memcpy(st->pname, fs->tkn_text, fs->tkn_len);
 }
 
 #define MAX_SCORE 999999
@@ -155,9 +159,6 @@ do_summary(complexity_exit_code_t);
 
 extern void
 score_proc(state_t * score);
-
-extern void
-die(complexity_exit_code_t, char const * fmt, ...);
 
 #endif /* COMPLEXITY_H_GUARD */
 /*

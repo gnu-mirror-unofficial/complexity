@@ -1,7 +1,7 @@
 
 /*
  *  This file is part of Complexity.
- *  Complexity Copyright (c) 2011-2014 by Bruce Korb - all rights reserved
+ *  Complexity Copyright (c) 2011-2016 by Bruce Korb - all rights reserved
  *
  *  Complexity is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -20,10 +20,11 @@
 #define _GNU_SOURCE 1
 
 #include "opts.h"
-#include <math.h>
-#include <unistd.h>
-#include <stdlib.h>
 #include <limits.h>
+#include <math.h>
+#include <regex.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #ifndef UNIFDEF_EXE
 #define UNIFDEF_EXE "unifdef"
@@ -51,25 +52,6 @@ static state_t ** scores      = NULL;
 
 static char const * unifcmd = UNIFDEF_EXE;
 static char high_buf[1024];
-
-static void
-vdie(complexity_exit_code_t code, char const * fmt, va_list ap)
-{
-    fprintf(stderr, "%s error:  ", complexityOptions.pzProgName);
-    vfprintf(stderr, fmt, ap);
-
-    exit(code);
-}
-
-void
-die(complexity_exit_code_t code, char const * fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    vdie(code, fmt, ap);
-    // NOTREACHED
-    va_end(ap);
-}
 
 void
 initialize(int argc, char ** argv)
@@ -122,6 +104,21 @@ hash_score(score_t score)
     return 18 + (sc / 1000); // 19 -> ...
 }
 
+static inline bool
+check_skip(int * scores, int ix, int lim, bool skip_now)
+{
+    if (skip_now)
+        return skip_now; // have zero and already skipping
+    /*
+     *  First zero count in a sequence.
+     */
+    if ((ix + 1) < lim)
+        return false; // no more lines, so do not ignore.
+    if (scores[ix + 1] != 0)
+        return false; // next not zero, so report zero
+    return true; // next is zero too, so start zero sequence
+}
+
 static void
 print_histogram(void)
 {
@@ -171,26 +168,9 @@ print_histogram(void)
         }
 
         if (ct == 0) {
+            skipping = check_skip(lines_scoring, ix, score_ix_lim, skipping);
             if (skipping)
                 continue;
-
-            /*
-             *  First zero count in a sequenct
-             */
-            int skp_ct = 1;
-            for (int i = ix+1; i < score_ix_lim; i++) {
-                if (lines_scoring[i] != 0)
-                    break;
-                skp_ct++;
-            }
-
-            /*
-             *  Do not skip a single zero count.  We'll just print it.
-             */
-            if (skp_ct > 1) {
-                skipping = true;
-                continue;
-            }
         }
 
         /*
@@ -289,7 +269,7 @@ do_summary(complexity_exit_code_t exit_code)
         for (int ix = 0; ix < score_ct; ix++) {
             int val = scores[ix]->score + 0.5;
             printf(line_fmt, val, scores[ix]->ln_ct, scores[ix]->ncln_ct,
-                   scores[ix]->end, scores[ix]->ln_st, scores[ix]->pname);
+                   scores[ix]->st_end, scores[ix]->ln_st, scores[ix]->pname);
         }
     }
     if (HAVE_OPT(HISTOGRAM)) {
@@ -305,8 +285,6 @@ popen_unifdef(char const * fname)
 {
     static char const * cmd = NULL;
     static size_t       cmdlen = 0;
-
-    int fdpair[2];
 
     if (cmd == NULL) {
         int ct = STACKCT_OPT(UNIFDEF);
@@ -375,7 +353,7 @@ load_file(fstate_t * fs)
 
     {
         struct stat sb;
-        if (fstat(fileno(fs->fp), &sb) >= 0) {
+        if (fstat(fileno(fs->fs_fp), &sb) >= 0) {
             if (S_ISREG(sb.st_mode)) {
                 fsiz = sb.st_size + 1;
                 is_guess = 0;
@@ -389,7 +367,7 @@ load_file(fstate_t * fs)
 
     for (;;) {
         size_t ct   = fsiz - foff;
-        size_t rdct = fread(rdp, 1, ct, fs->fp);
+        size_t rdct = fread(rdp, 1, ct, fs->fs_fp);
 
         if ((rdct < ct) || (! is_guess)) {
             rdp[rdct] = '\0';
@@ -412,10 +390,10 @@ load_file(fstate_t * fs)
         rdp  = full_text + foff;
     }
 
-    fs->text     = fs->scan = full_text;
+    fs->fs_text  = fs->fs_scan = full_text;
     fs->cur_line = 1;
     fs->nc_line  = 0;
-    fs->bol      = true;
+    fs->fs_bol   = true;
     fs->last_tkn = TKN_EOF;
     return true;
 }
@@ -430,18 +408,122 @@ add_score(state_t * pstate)
 
     if (val >= MAX_SCORE) {
         fprintf(stderr, "unscored: %s in %s on line %d\n",
-                pstate->pname, pstate->fstate->fname, pstate->proc_line);
+                pstate->pname, pstate->st_fstate->fs_fname, pstate->proc_line);
         unscore_ct++;
         return false;
     }
 
     if (val > high_score) {
         snprintf(high_buf, sizeof(high_buf), "%s() in %s",
-                 pstate->pname, pstate->fstate->fname);
+                 pstate->pname, pstate->st_fstate->fs_fname);
         high_score = val;
     }
 
     return true;
+}
+
+static void
+re_die(int code, regex_t * re, char const * pat)
+{
+    char msg[64];
+    (void)regerror(code, re, msg, sizeof(msg));
+    die(COMPLEXITY_EXIT_NOMEM, "re error %s (%u) compiling ``%s''\n",
+        msg, (unsigned)code, pat);
+}
+
+static regex_t *
+re_compile(void)
+{
+    static char const pat[] = "[\r\n]\\}";
+
+    regex_t * res = malloc(sizeof(*res));
+    if (res == NULL)
+        die(COMPLEXITY_EXIT_NOMEM, nomem_fmt, (int)sizeof(*res));
+
+    {
+        int reres = regcomp(res, pat, REG_EXTENDED);
+        if (reres != 0)
+            re_die(reres, res, pat);
+    }
+
+    return res;
+}
+
+static bool
+find_proc_end(state_t * ps, regex_t * re)
+{
+    regmatch_t match;
+    if (regexec(re, ps->st_fstate->fs_scan, 1, &match, 0) != 0)
+        return false;
+    ps->st_end = (void *)(uintptr_t)
+        (ps->st_fstate->fs_scan + match.rm_eo);
+    return true;
+}
+
+static bool
+do_proc(fstate_t * fs)
+{
+    bool res = true;
+    static regex_t * re = NULL;
+    state_t * pstate = malloc(sizeof(*pstate));
+    if (pstate == NULL)
+        die(COMPLEXITY_EXIT_NOMEM, nomem_fmt, (int)sizeof(*pstate));
+
+    if (re == NULL)
+        re = re_compile();
+
+    state_init(pstate, fs);
+
+    if (! find_proc_end(pstate, re))
+        goto all_done;
+
+    if (HAVE_OPT(IGNORE)) {
+        int ct = STACKCT_OPT(IGNORE);
+        char const ** il = STACKLST_OPT(IGNORE);
+
+        do  {
+            if (strcmp(*(il++), pstate->pname) == 0)
+                goto skip_proc;
+        } while (--ct > 0);
+    }
+
+    pstate->proc_line = fs->cur_line;
+
+    score_proc(pstate);
+    if (! add_score(pstate))
+        goto skip_proc;
+
+    if (pstate->ncln_ct == 0) {
+        pstate->score = 0;
+    } else {
+        score_ttl   += (pstate->score * pstate->ncln_ct);
+        ttl_line_ct += pstate->ncln_ct;
+    }
+
+    if (++score_ct >= score_alloc_ct) {
+        score_alloc_ct += score_alloc_ct / 2;
+        size_t sz = score_alloc_ct * sizeof(*scores);
+        scores = realloc(scores, sz);
+        if (scores == NULL)
+            die(COMPLEXITY_EXIT_NOMEM, nomem_fmt, sz);
+    }
+
+    pstate->st_end     = (char *)fs->fs_fname;
+    scores[score_ct-1] = pstate;
+    return res;
+
+ skip_proc:
+
+    while (fs->fs_scan < pstate->st_end) {
+        if (fs->fs_scan[0] == NL)
+            fs->cur_line++;
+        fs->fs_scan++;
+    }
+
+ all_done:
+
+    free(pstate);
+    return res;
 }
 
 complexity_exit_code_t
@@ -450,11 +532,11 @@ complex_eval(char const * fname)
     complexity_exit_code_t res = COMPLEXITY_EXIT_SUCCESS;
 
     fstate_t fstate = {
-        .fp    = HAVE_OPT(UNIFDEF) ? popen_unifdef(fname) : fopen(fname, "r"),
-        .fname = fname
+        .fs_fp    = HAVE_OPT(UNIFDEF) ? popen_unifdef(fname) : fopen(fname, "r"),
+        .fs_fname = fname
     };
 
-    if (fstate.fp == NULL)
+    if (fstate.fs_fp == NULL)
         return COMPLEXITY_EXIT_BAD_FILE;
 
     if (! load_file(&fstate))
@@ -466,66 +548,14 @@ complex_eval(char const * fname)
         die(COMPLEXITY_EXIT_NOMEM, nomem_fmt, proc_ct);
     proc_ct = 0;
 
-    while (find_proc_start(&fstate)) {
-        state_t * pstate = malloc(sizeof(*pstate));
-        if (pstate == NULL)
-            die(COMPLEXITY_EXIT_NOMEM, nomem_fmt, (int)sizeof(*pstate));
-
-        state_init(pstate, &fstate);
-
-        if (fstate.tkn_len >= sizeof(pstate->pname))
-            fstate.tkn_len = sizeof(pstate->pname) - 1;
-        memcpy(pstate->pname, fstate.tkn_text, fstate.tkn_len);
-
-        pstate->end = strstr(fstate.scan, "\n}");
-        if (pstate->end == NULL) {
-            free(pstate);
+    while (find_proc_start(&fstate))
+        if (! do_proc(&fstate))
             break;
-        }
-
-        if (HAVE_OPT(IGNORE)) {
-            int ct = STACKCT_OPT(IGNORE);
-            char const ** il = STACKLST_OPT(IGNORE);
-
-            do  {
-                if (strcmp(*(il++), pstate->pname) == 0)
-                    goto skip_proc;
-            } while (--ct > 0);
-        }
-
-        pstate->end      += 3;
-        pstate->proc_line = fstate.cur_line;
-
-        score_proc(pstate);
-        if (! add_score(pstate)) {
-        skip_proc:
-            free(pstate);
-            continue;
-        }
-
-        if (pstate->ncln_ct == 0) {
-            pstate->score = 0;
-        } else {
-            score_ttl   += (pstate->score * pstate->ncln_ct);
-            ttl_line_ct += pstate->ncln_ct;
-        }
-
-        if (++score_ct >= score_alloc_ct) {
-            score_alloc_ct += score_alloc_ct / 2;
-            size_t sz = score_alloc_ct * sizeof(*scores);
-                scores = realloc(scores, sz);
-            if (scores == NULL)
-                die(COMPLEXITY_EXIT_NOMEM, nomem_fmt, sz);
-        }
-
-        pstate->end = (char *)fname;
-        scores[score_ct-1] = pstate;
-    }
 
     fflush(stdout);
-    free((void *)fstate.text);
+    free((void *)fstate.fs_text);
 
-    HAVE_OPT(UNIFDEF) ? pclose(fstate.fp) : fclose(fstate.fp);
+    HAVE_OPT(UNIFDEF) ? pclose(fstate.fs_fp) : fclose(fstate.fs_fp);
 
     if (high_score > OPT_VALUE_HORRID_THRESHOLD)
         res = COMPLEXITY_EXIT_HORRID_FUNCTION;

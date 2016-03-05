@@ -2,7 +2,7 @@
 /*  -*- Mode: conf -*-
  *
  *  This file is part of Complexity.
- *  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
+ *  Complexity Copyright (c) 2011-2016 by Bruce Korb - all rights reserved
  *
  *  Complexity is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,7 @@ explain     = <<- _EOF_
 	_EOF_;
 
 copyright   = {
-    date    = "2011";
+    date    = "2011-2016";
     owner   = "Bruce Korb";
     eaddr   = "bkorb@gnu.org";
     type    = gpl;
@@ -43,6 +43,7 @@ version     = `
  cat ${ver_file}`;
 
 long-opts;
+die-code;
 gnu-usage;
 environrc;
 rcfile      = '.complexityrc';

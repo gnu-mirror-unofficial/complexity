@@ -1,7 +1,7 @@
 
 /*
  *  This file is part of Complexity.
- *  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
+ *  Complexity Copyright (c) 2011-2016 by Bruce Korb - all rights reserved
  *
  *  Complexity is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -87,7 +87,7 @@ bad_token(state_t * sc, char const * where, token_t ev)
         p = invbuf;
     }
 
-    fprintf(stderr, msgfmt, sc->ln_ct, sc->pname, sc->fstate->fname,
+    fprintf(stderr, msgfmt, sc->ln_ct, sc->pname, sc->st_fstate->fs_fname,
             sc->proc_line + sc->ln_ct, where, p, ev);
     return MAX_SCORE;
 }
@@ -95,12 +95,12 @@ bad_token(state_t * sc, char const * where, token_t ev)
 static token_t
 next_score_token(state_t * sc)
 {
-    token_t tk = next_token(sc->fstate);
-    if ((tk == TKN_EOF) || (sc->fstate->scan > sc->end))
+    token_t tk = next_token(sc->st_fstate);
+    if ((tk == TKN_EOF) || (sc->st_fstate->fs_scan > sc->st_end))
         longjmp(bail_on_proc, 1);
 
-    sc->ln_ct   = sc->fstate->cur_line - sc->ln_st;
-    sc->ncln_ct = sc->fstate->nc_line  - sc->ncln_st;
+    sc->ln_ct   = sc->st_fstate->cur_line - sc->ln_st;
+    sc->ncln_ct = sc->st_fstate->nc_line  - sc->ncln_st;
 
     if (tk != TKN_KW_GOTO)
         return tk;
@@ -111,7 +111,7 @@ next_score_token(state_t * sc)
 static void
 unget_score_token(state_t * sc)
 {
-    unget_token(sc->fstate);
+    unget_token(sc->st_fstate);
 }
 
 static score_t
@@ -125,7 +125,7 @@ handle_stmt_block(state_t * sc)
         case TKN_LIT_CBRACE:
             if (HAVE_OPT(TRACE))
                 fprintf(trace_fp, "line %5d score %5u\n",
-                        sc->fstate->cur_line, (unsigned int)res);
+                        sc->st_fstate->cur_line, (unsigned int)res);
             return (res > MAX_SCORE) ? MAX_SCORE : res;
 
         default:
@@ -137,7 +137,7 @@ handle_stmt_block(state_t * sc)
 static score_t
 handle_invalid(state_t * sc)
 {
-    sc->fstate->scan = sc->end;
+    sc->st_fstate->fs_scan = sc->st_end;
     fprintf(stderr, "invalid transition\n");
     return MAX_SCORE;
 }
@@ -241,7 +241,7 @@ handle_subexpr(state_t * sc, bool is_for_clause)
                 ses.res -= 1;
             if (HAVE_OPT(TRACE))
                 fprintf(trace_fp, "line %5d score %u\n",
-                        sc->fstate->cur_line, (unsigned int)ses.res);
+                        sc->st_fstate->cur_line, (unsigned int)ses.res);
             return ses.res;
 
         case TKN_LIT_OPNPAREN:
@@ -313,7 +313,6 @@ handle_parms(state_t * sc)
 {
     score_t res = 0;
     int stline = sc->ncln_ct - 1;
-    int paren_is_parms = 1;
 
     for (;;) {
         token_t ev = next_score_token(sc);
@@ -357,7 +356,7 @@ handle_expression(state_t * sc)
     bool cbrace_needs_semi = false;
 
     for (;;) {
-        token_t ltk = sc->fstate->last_tkn;
+        token_t ltk = sc->st_fstate->last_tkn;
         token_t ev = next_score_token(sc);
         bool next_paren_is_parms    = false;
         bool next_cbrace_needs_semi = false;
@@ -366,7 +365,7 @@ handle_expression(state_t * sc)
         case TKN_LIT_CBRACE:
             if (HAVE_OPT(TRACE))
                 fprintf(trace_fp, "line %5d score %5u\n",
-                        sc->fstate->cur_line, (unsigned int)res);
+                        sc->st_fstate->cur_line, (unsigned int)res);
             /* FALLTHROUGH */
         case TKN_LIT_CLSBRACK:
         case TKN_LIT_CLSPAREN:
@@ -403,7 +402,7 @@ handle_expression(state_t * sc)
                  * To fix this, we lie to our caller and claim we saw a
                  * semi-colon.
                  */
-                sc->fstate->last_tkn = TKN_LIT_SEMI;
+                sc->st_fstate->last_tkn = TKN_LIT_SEMI;
                 goto done;
             }
             break;
@@ -609,14 +608,13 @@ do_if_clause:
         break;
 
     default:
-    bad_token:
         return bad_token(sc, "bad if block", ev);
     }
 
     if (then_clause_done)
         return res;
 
-    ev = sc->fstate->last_tkn;
+    ev = sc->st_fstate->last_tkn;
     {
         token_t ntkn = next_score_token(sc);
         if (ntkn != TKN_KW_ELSE) {
@@ -624,7 +622,7 @@ do_if_clause:
              * Put the token back.  The caller will need it.
              */
             unget_score_token(sc);
-            sc->fstate->last_tkn = ev;
+            sc->st_fstate->last_tkn = ev;
             return res;
         }
     }
@@ -641,7 +639,7 @@ static score_t
 handle_TKN_KW_FOR(state_t * sc)
 {
     score_t res;
-    bool    real_for = (sc->fstate->last_tkn == TKN_KW_FOR);
+    bool    real_for = (sc->st_fstate->last_tkn == TKN_KW_FOR);
     token_t ev = next_score_token(sc);
 
     if (ev != TKN_LIT_OPNPAREN)
@@ -682,11 +680,15 @@ handle_TKN_KW_FOR(state_t * sc)
         case TKN_NAME:
         case TKN_NUMBER:
             res += handle_expression(sc);
-            if (sc->fstate->last_tkn == TKN_LIT_SEMI)
+            if (sc->st_fstate->last_tkn == TKN_LIT_SEMI)
                 return res;
-            if (sc->fstate->last_tkn != TKN_LIT_COMMA)
+            if (sc->st_fstate->last_tkn != TKN_LIT_COMMA)
                 return bad_token(sc, "loop body ended badly",
-                                 sc->fstate->last_tkn);
+                                 sc->st_fstate->last_tkn);
+            /* FALLTHROUGH */
+
+        default:
+            continue;
         }
     }
 }
@@ -704,7 +706,7 @@ handle_bracket_expr(state_t * sc)
 
     for (;;) {
         res += handle_expression(sc);
-        if (sc->fstate->last_tkn != TKN_LIT_COMMA)
+        if (sc->st_fstate->last_tkn != TKN_LIT_COMMA)
             break;
         res -= 1;
     }
@@ -745,7 +747,7 @@ score_proc(state_t * score)
 
     if (setjmp(bail_on_proc) != 0) {
         fprintf(stderr, "end of %s() in %s reached with open control blocks\n",
-                score->pname, score->fstate->fname);
+                score->pname, score->st_fstate->fs_fname);
 
         score->score = MAX_SCORE;
         return;
@@ -755,9 +757,9 @@ score_proc(state_t * score)
     if (score->goto_ct > 0)
         score->score += score->goto_ct * scaling;
 
-    if (score->fstate->scan + 2 <= score->end) {
+    if (score->st_fstate->fs_scan + 2 <= score->st_end) {
         fprintf(stderr, "procedure %s in %s ended before final close bracket\n",
-                score->pname, score->fstate->fname);
+                score->pname, score->st_fstate->fs_fname);
 
         score->score += penalty;
     }

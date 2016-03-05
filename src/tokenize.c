@@ -1,7 +1,7 @@
 
 /*
  *  This file is part of Complexity.
- *  Complexity Copyright (c) 2011, 2014 by Bruce Korb - all rights reserved
+ *  Complexity Copyright (c) 2011-2016 by Bruce Korb - all rights reserved
  *
  *  Complexity is free software: you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,17 +24,17 @@
 static bool
 skip_comment(fstate_t * fs)
 {
-    char const * p = fs->scan + 1; // skip the '*' from the "/*"
+    char const * p = fs->fs_scan + 1; // skip the '*' from the "/*"
 
     for (;;) {
         while (! IS_STAR_OR_NL_CHAR(*p))  p++;
 
         switch (*p) {
-        case NUL:  fs->scan = p;   return false;
+        case NUL:  fs->fs_scan = p;   return false;
         case NL: fs->cur_line++; p++; break;
         case '*':
             if (*++p == '/') {
-                fs->scan = p + 1;
+                fs->fs_scan = p + 1;
                 return true;
             }
         }
@@ -44,16 +44,16 @@ skip_comment(fstate_t * fs)
 static bool
 skip_to_eol(fstate_t * fs)
 {
-    while (! IS_END_OF_LINE_CHAR(*(++fs->scan)))   ;
-    return fs->scan[0] == NL;
+    while (! IS_END_OF_LINE_CHAR(*(++fs->fs_scan)))   ;
+    return fs->fs_scan[0] == NL;
 }
 
 static token_t
 bang_check(fstate_t * fs)
 {
-    if (fs->scan[0] != '=')
+    if (fs->fs_scan[0] != '=')
         return TKN_ARITH_OP; // logical not
-    fs->scan++;
+    fs->fs_scan++;
     return TKN_REL_OP;       // not equal
 }
 
@@ -61,7 +61,7 @@ static token_t
 check_quote(fstate_t * fs, char q)
 {
     token_t res = TKN_NAME;
-    char const * s = fs->scan;
+    char const * s = fs->fs_scan;
 
     while (*s != q) {
         switch (*s) {
@@ -80,7 +80,7 @@ check_quote(fstate_t * fs, char q)
     }
 
 leave:
-    fs->scan = s + 1;
+    fs->fs_scan = s + 1;
     return res; // string, actually
 }
 
@@ -99,11 +99,11 @@ sglquot_check(fstate_t * fs)
 static token_t
 hash_check(fstate_t * fs)
 {
-    if (! fs->bol)
+    if (! fs->fs_bol)
         return TKN_ARITH_OP;
 
     token_t res = TKN_EMPTY;
-    char const * s = fs->scan;
+    char const * s = fs->fs_scan;
     char ch;
 
     while (*s != NL) {
@@ -126,19 +126,19 @@ hash_check(fstate_t * fs)
         case '/':
             switch (*++s) {
             case '*': // "C" comment
-                fs->scan = s;
+                fs->fs_scan = s;
                 if (! skip_comment(fs)) {
                     res = TKN_EOF;
                     goto leave;
                 }
-                s = fs->scan; // now at next char to examine
+                s = fs->fs_scan; // now at next char to examine
                 continue;
 
             case '/': // "C++" comment to end of line
-                fs->scan = s;
+                fs->fs_scan = s;
                 if (! skip_to_eol(fs))
                     res = TKN_EOF;
-                s = fs->scan;
+                s = fs->fs_scan;
                 goto leave;
 
             case NL:
@@ -157,26 +157,26 @@ hash_check(fstate_t * fs)
     }
 
 leave:
-    fs->scan = s;
-    fs->bol  = true;
+    fs->fs_scan = s;
+    fs->fs_bol  = true;
     return res;
 }
 
 static token_t
 assign_check(fstate_t * fs)
 {
-    if (fs->scan[0] != '=')
+    if (fs->fs_scan[0] != '=')
         return TKN_ARITH_OP;
-    fs->scan++;
+    fs->fs_scan++;
     return TKN_ASSIGN;
 }
 
 static token_t
 amph_check(fstate_t * fs)
 {
-    if (fs->scan[0] != '&')
+    if (fs->fs_scan[0] != '&')
         return assign_check(fs);
-    fs->scan++;
+    fs->fs_scan++;
     return TKN_LOGIC_AND;
 }
 
@@ -184,8 +184,8 @@ static token_t
 dot_check(fstate_t * fs)
 {
     token_t res = TKN_ARITH_OP;
-    if ((fs->scan[0] == '.') && (fs->scan[1] == '.')) {
-        fs->scan += 2;
+    if ((fs->fs_scan[0] == '.') && (fs->fs_scan[1] == '.')) {
+        fs->fs_scan += 2;
         res = TKN_ELLIPSIS;
     }
     return res;
@@ -196,9 +196,9 @@ plus_check(fstate_t * fs)
 {
     token_t res = TKN_ARITH_OP;
 
-    switch (fs->scan[0]) {
-    case '+': res = TKN_ARITH_OP; fs->scan++; break;
-    case '=': res = TKN_ASSIGN;   fs->scan++; break;
+    switch (fs->fs_scan[0]) {
+    case '+': res = TKN_ARITH_OP; fs->fs_scan++; break;
+    case '=': res = TKN_ASSIGN;   fs->fs_scan++; break;
     case NUL: res = TKN_EOF; break;
     }
 
@@ -210,10 +210,10 @@ hyphen_check(fstate_t * fs)
 {
     token_t res = TKN_ARITH_OP;
 
-    switch (fs->scan[0]) {
+    switch (fs->fs_scan[0]) {
     case '>':
-    case '-': res = TKN_ARITH_OP; fs->scan++; break;
-    case '=': res = TKN_ASSIGN;   fs->scan++; break;
+    case '-': res = TKN_ARITH_OP; fs->fs_scan++; break;
+    case '=': res = TKN_ASSIGN;   fs->fs_scan++; break;
     case NUL: res = TKN_EOF; break;
     }
 
@@ -225,9 +225,9 @@ slash_check(fstate_t * fs)
 {
     token_t res = TKN_ARITH_OP;
 
-    switch (fs->scan[0]) {
+    switch (fs->fs_scan[0]) {
     case '/': skip_to_eol(fs); res = TKN_EMPTY;  break;
-    case '=': fs->scan++;      res = TKN_ASSIGN; break;
+    case '=': fs->fs_scan++;      res = TKN_ASSIGN; break;
     case '*':
         if (! skip_comment(fs))
             res = TKN_EOF;
@@ -244,17 +244,17 @@ less_check(fstate_t * fs)
 {
     token_t res = TKN_REL_OP;
 
-    switch (fs->scan[0]) {
-    case '<': fs->scan++;
-        if (fs->scan[0] == '=') {
-            fs->scan++;
+    switch (fs->fs_scan[0]) {
+    case '<': fs->fs_scan++;
+        if (fs->fs_scan[0] == '=') {
+            fs->fs_scan++;
             res = TKN_ASSIGN;
         }
         else
             res = TKN_ARITH_OP;
         break;
 
-    case '=': fs->scan++; break;
+    case '=': fs->fs_scan++; break;
     }
 
     return res;
@@ -264,8 +264,8 @@ static token_t
 equal_check(fstate_t * fs)
 {
     token_t res = TKN_ASSIGN;
-    if (fs->scan[0] == '=') {
-        fs->scan++;
+    if (fs->fs_scan[0] == '=') {
+        fs->fs_scan++;
         res = TKN_REL_OP;
     }
     return res;
@@ -276,17 +276,17 @@ greater_check(fstate_t * fs)
 {
     token_t res = TKN_REL_OP;
 
-    switch (fs->scan[0]) {
-    case '>': fs->scan++;
-        if (fs->scan[0] == '=') {
-            fs->scan++;
+    switch (fs->fs_scan[0]) {
+    case '>': fs->fs_scan++;
+        if (fs->fs_scan[0] == '=') {
+            fs->fs_scan++;
             res = TKN_ASSIGN;
         }
         else
             res = TKN_ARITH_OP;
         break;
 
-    case '=': fs->scan++; break;
+    case '=': fs->fs_scan++; break;
     }
 
     return res;
@@ -297,8 +297,8 @@ carat_check(fstate_t * fs)
 {
     token_t res = TKN_ARITH_OP;
 
-    switch (fs->scan[0]) {
-    case '=': fs->scan++;      res = TKN_ASSIGN; break;
+    switch (fs->fs_scan[0]) {
+    case '=': fs->fs_scan++;      res = TKN_ASSIGN; break;
     }
 
     return res;
@@ -307,19 +307,19 @@ carat_check(fstate_t * fs)
 static token_t
 vertbar_check(fstate_t * fs)
 {
-    if (fs->scan[0] != '|')
+    if (fs->fs_scan[0] != '|')
         return assign_check(fs);
-    fs->scan++;
+    fs->fs_scan++;
     return TKN_LOGIC_OR;
 }
 
 static token_t
 unknown_check(fstate_t * fs)
 {
-    unsigned char ch = fs->scan[-1];
+    unsigned char ch = fs->fs_scan[-1];
 
     fprintf(stderr, "invalid character in %s on line %d: 0x%02X (%c)\n",
-            fs->fname, fs->cur_line, ch,
+            fs->fs_fname, fs->cur_line, ch,
             (isprint(ch) ? ch : '?'));
 
     return TKN_EOF;
@@ -341,15 +341,15 @@ keyword_check(fstate_t * fs)
 
     int lo = 0;
     int hi = kw_size - 1;
-    fs->scan--;
+    fs->fs_scan--;
 
     do  {
         int ix  = (lo + hi) / 2;
-        int cmp = strncmp(kw_table[ix].name, fs->scan, kw_table[ix].nlen);
+        int cmp = strncmp(kw_table[ix].name, fs->fs_scan, kw_table[ix].nlen);
 
         if (cmp == 0) {
-            if (! IS_NAME_CHAR(fs->scan[kw_table[ix].nlen])) {
-                fs->scan += kw_table[ix].nlen;
+            if (! IS_NAME_CHAR(fs->fs_scan[kw_table[ix].nlen])) {
+                fs->fs_scan += kw_table[ix].nlen;
                 return kw_table[ix].tval;
             }
             break;
@@ -361,14 +361,14 @@ keyword_check(fstate_t * fs)
             hi = ix - 1;
     } while (lo <= hi);
 
-    while (IS_NAME_CHAR(*++(fs->scan)))  ;
+    while (IS_NAME_CHAR(*++(fs->fs_scan)))  ;
     return TKN_NAME;
 }
 
 void
 unget_token(fstate_t * fs)
 {
-    fs->scan     = fs->tkn_text;
+    fs->fs_scan     = fs->tkn_text;
     fs->cur_line = fs->tkn_line;
 }
 
@@ -376,7 +376,7 @@ token_t
 extern_c_check(fstate_t * fs)
 {
     int nl_ct = 0;
-    char const * s = fs->scan;
+    char const * s = fs->fs_scan;
     while (IS_SPACE_CHAR(*s)) {
         if (*s == NL) nl_ct++;
         s++;
@@ -390,7 +390,7 @@ extern_c_check(fstate_t * fs)
         s++;
     }
     if (*s != '{') return TKN_NAME;
-    fs->scan      = s + 1;
+    fs->fs_scan      = s + 1;
     fs->cur_line += nl_ct;
     return TKN_EMPTY;
 }
@@ -399,21 +399,21 @@ static inline bool
 next_nonblank(fstate_t * fs)
 {
     for (;;) {
-        switch (*(fs->scan)) {
+        switch (*(fs->fs_scan)) {
         case NL:
             fs->cur_line++;
-            fs->bol = true;
+            fs->fs_bol = true;
             /* FALLTHROUGH */
 
         case ' ': case '\t': case '\f': case '\v':
-            fs->scan++;
+            fs->fs_scan++;
             break;
 
         case NUL:
             return false;
 
         default:
-            fs->tkn_text = fs->scan;
+            fs->tkn_text = fs->fs_scan;
             fs->tkn_line = fs->cur_line;
             return true;
         }
@@ -429,13 +429,13 @@ next_token(fstate_t * fs)
         if (! next_nonblank(fs))
             return TKN_EOF;
 
-        switch (*(fs->scan++)) {
+        switch (*(fs->fs_scan++)) {
         case NUL:
             return TKN_EOF;
 
         case 'A' ... 'Z':
         case '_': case '$':
-            while (IS_NAME_CHAR(fs->scan[0]))  fs->scan++;
+            while (IS_NAME_CHAR(fs->fs_scan[0]))  fs->fs_scan++;
             res = TKN_NAME;
             break;
 
@@ -446,7 +446,7 @@ next_token(fstate_t * fs)
             break;
 
         case '0' ... '9':
-            while (IS_NAME_CHAR(fs->scan[0]))  fs->scan++;
+            while (IS_NAME_CHAR(fs->fs_scan[0]))  fs->fs_scan++;
             res = TKN_NUMBER;
             break;
 
@@ -488,9 +488,9 @@ next_token(fstate_t * fs)
         }
     } while (res == TKN_EMPTY);
 
-    fs->tkn_len = fs->scan - fs->tkn_text;
-    if (fs->bol) {
-        fs->bol = 0;
+    fs->tkn_len = fs->fs_scan - fs->tkn_text;
+    if (fs->fs_bol) {
+        fs->fs_bol = 0;
         fs->nc_line++;
     }
 
@@ -504,13 +504,19 @@ skip_params(fstate_t * fs)
     for (;;) {
         token_t tk = next_token(fs);
         switch (tk) {
-        case TKN_LIT_OPNPAREN: depth++; break;
+        case TKN_LIT_OPNPAREN:
+            depth++;
+            break;
+
         case TKN_LIT_CLSPAREN:
             if (--depth > 0)
-                break;
+                continue;
             /* FALLTHROUGH */
         case TKN_EOF:
             return tk;
+
+        default:
+            continue;
         }
     }
 }
@@ -541,6 +547,9 @@ skip_to_semi(fstate_t * fs)
             /* FALLTHROUGH */
         case TKN_EOF:
             return tkn;
+
+        default:
+            continue;
         }
     }
 }

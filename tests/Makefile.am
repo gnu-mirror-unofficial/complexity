@@ -5,4 +5,4 @@ TESTS_ENVIRONMENT   = TERM='' \
 	top_builddir='$(top_builddir)' top_srcdir='$(top_srcdir)'
 
 TESTS               = complexity.test
-EXTRA_DIST          = $(TESTS)
+EXTRA_DIST          = $(TESTS) sample.c

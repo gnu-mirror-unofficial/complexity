@@ -1,27 +1,39 @@
 #! /bin/sh
 
-srcdir=`cd ${top_srcdir} ; pwd`/src
-tstdir=`pwd`
+fail_exit() {
+    ct=0
+    while IFS='' read -r line
+    do
+        printf "%03u - %s\n" $ct "$line"
+    done < ${outfile}
+    exit 1
+} 1>&2
+
+set -x
+srcdir=`cd ${top_srcdir}/src && pwd`
+tstdir=${PWD}
+rcfile="${tstdir}/.complexityrc"
+outfile="${tstdir}/complexity.out"
+samples=`cd ${srcdir}/../tests  && \
+    ls -1 s*mple.c | sed "s@^@$PWD/@"`
 
 cd ${top_builddir}
-cpx=${PWD}/src/complexity
 
-cat > ${TMPDIR:-/tmp}/.complexityrc <<- _EOF_
+cat > "$rcfile" <<- _EOF_
 	hist
 	score
 	thresh 0
 	_EOF_
-trap "rm -f ${TMPDIR:-/tmp}/.complexityrc" 0
+trap "rm -f '$rcfile' '${outfile}'" 0
+cpx="${PWD}/src/complexity -< $rcfile"
 
 cd ${srcdir}
-find * -type f -name '*.c' | \
-     ${cpx} '-<' ${TMPDIR:-/tmp}/.complexityrc \
-     > ${tstdir}/complexity.out
+${cpx} *.c > ${outfile}
 cd ${tstdir}
 
 set -e
 
-lc=`egrep '^Complexity (Scores|Histogram)$' complexity.out | \
+lc=`grep -E '^Complexity (Scores|Histogram)$' ${outfile} | \
     wc -l`
 
 test $lc -eq 2 || {
@@ -29,11 +41,17 @@ test $lc -eq 2 || {
     exit 1
 }
 
-lc=`egrep '^ +0 ' complexity.out | wc -l`
+lc=`grep -E '^ +0 ' ${outfile} | wc -l`
 test $lc -ge 5 || {
     echo "did not find enough zero scoring procedures: " $lc >&2
     exit 1
 }
 
-rm -f complexity.out
+$cpx -t0 $samples > ${outfile} 2>&1
+set +e
+grep -s -E '^error on ' ${outfile} && \
+    fail_exit
+
+test $(grep -E '^ *[01]  *1  *1 ' ${outfile} | wc -l) -ne 2 && \
+    fail_exit
 exit 0
