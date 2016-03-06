@@ -22,7 +22,8 @@
 
 static jmp_buf bail_on_proc;
 
-static char const err_fmt[] = "error: %s %s\n";
+static char const err_fmt[]    = "error: %s %s\n";
+static char const line_score[] = "line %5d score %5u\n";
 
 typedef score_t (handler_func_t)(state_t *);
 
@@ -153,7 +154,7 @@ handle_stmt_block(state_t * sc)
         switch (ev) {
         case TKN_LIT_CBRACE:
             if (HAVE_OPT(TRACE))
-                fprintf(trace_fp, "line %5d score %5u\n",
+                fprintf(trace_fp, line_score,
                         sc->st_fstate->cur_line, (unsigned int)res);
             depth--;
             return (res > MAX_SCORE) ? MAX_SCORE : res;
@@ -273,14 +274,14 @@ handle_subexpr(state_t * sc, bool is_for_clause)
                 char const * msg = fiddle_subexpr_score(&ses);
                 if ((msg != NULL) && HAVE_OPT(TRACE))
                     fprintf(trace_fp, "line %5d expression score adjusted due "
-                            "to mix of %s\n", sc->st_fstate->nc_line, msg);
+                            "to mix of %s\n", sc->st_fstate->cur_line, msg);
             }
 
             ses.res += (score_t)(sc->st_fstate->nc_line - start_nc_ln_ct);
             if (ses.res > 1)
                 ses.res -= 1;
             if (HAVE_OPT(TRACE))
-                fprintf(trace_fp, "line %5d score %u\n",
+                fprintf(trace_fp, line_score,
                         sc->st_fstate->cur_line, (unsigned int)ses.res);
             return ses.res;
 
@@ -417,7 +418,7 @@ handle_expression(state_t * sc)
         switch (ev) {
         case TKN_LIT_CBRACE:
             if (HAVE_OPT(TRACE))
-                fprintf(trace_fp, "line %5d score %5u\n",
+                fprintf(trace_fp, line_score,
                         sc->st_fstate->cur_line, (unsigned int)res);
             /* FALLTHROUGH */
         case TKN_LIT_CLSBRACK:
