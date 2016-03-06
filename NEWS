@@ -1,10 +1,11 @@
-New in 1.6 - March 2016
+New in 1.7 - March 2016
 
 * parse ternary operator correctly
 * allow proc closing braces after column 1
   *IFF* it is a one line procedure
 * enhance accepted line endings (viz. DOS and OS/X)
 * warnings & clarity cleanups
+* tracing now includes messages about convolution penalties
 
 New in 1.3 - October 2015
 
