@@ -349,7 +349,7 @@ load_file(fstate_t * fs)
     unsigned long const pgsz = sysconf(_SC_PAGE_SIZE);
     off_t fsiz = pgsz * 4;
     off_t foff = 0;
-    int   is_guess = 1;
+    bool  is_guess = true;
     char * full_text;
     char * rdp;
 
@@ -358,7 +358,7 @@ load_file(fstate_t * fs)
         if (fstat(fileno(fs->fs_fp), &sb) >= 0) {
             if (S_ISREG(sb.st_mode)) {
                 fsiz = sb.st_size + 1;
-                is_guess = 0;
+                is_guess = false;
             }
         }
     }
@@ -397,6 +397,8 @@ load_file(fstate_t * fs)
     fs->nc_line  = 0;
     fs->fs_bol   = true;
     fs->last_tkn = TKN_EOF;
+    if (HAVE_OPT(TRACE))
+        fprintf(trace_fp, "\nLoading file %s\n", fs->fs_fname);
     return true;
 }
 

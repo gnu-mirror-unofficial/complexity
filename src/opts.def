@@ -66,8 +66,10 @@ export = <<- _EOExport_
 	extern  int     score_ct;
 	extern  char const assert_fail_fmt[];
 
-	#define CX_ASSERT(_e) \
-	\	if (!(_e)) die(assert_fail_fmt, __FILE__, __LINE__, #_e);
+	#define CX_ASSERT(_e)   \
+	\	if (!(_e))      \
+	\	    die(COMPLEXITY_EXIT_ASSERT, assert_fail_fmt, \
+	\	        __FILE__, __LINE__, #_e);
 	_EOExport_;
 
 include = <<- _EOInclude_

@@ -240,6 +240,9 @@ fiddle_subexpr_score(subexpr_seen_t * ses)
         ses->res += penalty * (score_t)(
             ses->saw_assign + ses->saw_relop + tmp);
         return "*ALL* kinds of operators";
+
+    default:
+        CX_ASSERT(which == 0);
     }
 }
 

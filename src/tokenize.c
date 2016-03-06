@@ -96,6 +96,35 @@ sglquot_check(fstate_t * fs)
     return check_quote(fs, '\'');
 }
 
+static inline bool
+comment_check(fstate_t * fs, char const * s, token_t * res)
+{
+    fs->fs_scan = s;
+    switch (*s) {
+    case '*': // "C" comment
+        if (! skip_comment(fs)) {
+            *res = TKN_EOF;
+            return true;
+        }
+        return false;
+
+    case '/': // "C++" comment to end of line
+        if (! skip_to_eol(fs))
+            *res = TKN_EOF;
+        return true;
+
+    case NL:
+        return true;
+
+    case NUL: // Wooops
+        *res = TKN_EOF;
+        return true;
+
+    default:
+        return false;
+    }
+}
+
 static token_t
 hash_check(fstate_t * fs)
 {
@@ -124,31 +153,10 @@ hash_check(fstate_t * fs)
             goto leave;
 
         case '/':
-            switch (*++s) {
-            case '*': // "C" comment
-                fs->fs_scan = s;
-                if (! skip_comment(fs)) {
-                    res = TKN_EOF;
-                    goto leave;
-                }
-                s = fs->fs_scan; // now at next char to examine
-                continue;
-
-            case '/': // "C++" comment to end of line
-                fs->fs_scan = s;
-                if (! skip_to_eol(fs))
-                    res = TKN_EOF;
-                s = fs->fs_scan;
+            if (! comment_check(fs, ++s, &res))
                 goto leave;
-
-            case NL:
-                goto leave;
-
-            case NUL: // Wooops
-                res = TKN_EOF;
-                goto leave;
-            }
-            break;
+            s = fs->fs_scan; // now at next char to examine
+            continue;
 
         default:
             break;
@@ -156,7 +164,7 @@ hash_check(fstate_t * fs)
         s++;
     }
 
-leave:
+ leave:
     fs->fs_scan = s;
     fs->fs_bol  = true;
     return res;
