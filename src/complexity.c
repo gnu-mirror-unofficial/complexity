@@ -99,7 +99,8 @@ static inline int
 hash_score(score_t score)
 {
     int sc = score + 0.5;
-    if (sc < 100)  return sc / 10; // 0 -> 9
+    if (sc < 10)   return 0;
+    if (sc < 100)  return sc / 10; // 1 -> 9
     if (sc < 1000) return 9 + (sc / 100); // 10 -> 18
     return 18 + (sc / 1000); // 19 -> ...
 }
@@ -139,7 +140,7 @@ print_histogram(void)
     for (int ix = 0; ix < score_ct; ix++) {
         int score_ix = hash_score(scores[ix]->score);
 
-        lines_scoring[score_ix] += scores[ix]->st_non_comment_line_ct;
+        lines_scoring[score_ix] += scores[ix]->st_nc_line_ct;
         if (lines_scoring[score_ix] > max_ct)
             max_ct = lines_scoring[score_ix];
     }
@@ -227,7 +228,7 @@ print_stats(void)
     int     pct_thresh   = pct_ct;
 
     for (ix = 0; ix < score_ct; ix++) {
-        counter += scores[ix]->st_non_comment_line_ct;
+        counter += scores[ix]->st_nc_line_ct;
 
         if (counter >= pct_thresh) {
             pctile[pct_ix++] = (int)(scores[ix]->score + 0.5);
@@ -252,7 +253,7 @@ compare_score(void const * a, void const * b)
     int res = (int)(A->score - B->score);
     if (res != 0)
         return res;
-    res = A->st_non_comment_line_ct - B->st_non_comment_line_ct;
+    res = A->st_nc_line_ct - B->st_nc_line_ct;
     if (res != 0)
         return res;
     return A->st_line_ct - B->st_line_ct;
@@ -269,7 +270,7 @@ do_summary(complexity_exit_code_t exit_code)
         for (int ix = 0; ix < score_ct; ix++) {
             int val = scores[ix]->score + 0.5;
             printf(line_fmt, val, scores[ix]->st_line_ct,
-                   scores[ix]->st_non_comment_line_ct,
+                   scores[ix]->st_nc_line_ct,
                    scores[ix]->st_end, scores[ix]->ln_st, scores[ix]->pname);
         }
     }
@@ -513,11 +514,11 @@ do_proc(fstate_t * fs)
     if (! add_score(pstate))
         goto skip_proc;
 
-    if (pstate->st_non_comment_line_ct == 0) {
+    if (pstate->st_nc_line_ct == 0) {
         pstate->score = 0;
     } else {
-        score_ttl   += (pstate->score * pstate->st_non_comment_line_ct);
-        ttl_line_ct += pstate->st_non_comment_line_ct;
+        score_ttl   += (pstate->score * pstate->st_nc_line_ct);
+        ttl_line_ct += pstate->st_nc_line_ct;
     }
 
     if (++score_ct >= score_alloc_ct) {

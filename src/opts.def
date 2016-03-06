@@ -43,7 +43,7 @@ version     = `
  cat ${ver_file}`;
 
 long-opts;
-die-code;
+die-code; no-return;
 gnu-usage;
 environrc;
 rcfile      = '.complexityrc';
@@ -64,12 +64,18 @@ export = <<- _EOExport_
 	#include "complexity.h"
         extern  FILE *  trace_fp;
 	extern  int     score_ct;
+	extern  char const assert_fail_fmt[];
+
+	#define CX_ASSERT(_e) \
+	\	if (!(_e)) die(assert_fail_fmt, __FILE__, __LINE__, #_e);
 	_EOExport_;
 
 include = <<- _EOInclude_
 	score_t penalty  = DEFAULT_PENALTY;
 	FILE *  trace_fp = NULL;
 	int     score_ct = 0;
+	char const assert_fail_fmt[] =
+	\	"COMPLEX ASSERTION FAILURE in %s line %u:  %s\n";
 	_EOInclude_;
 
 main = {
@@ -351,6 +357,9 @@ exit-desc[4]    = 'One or more functions scored over 100';
 
 exit-name[5]    = no-data;
 exit-desc[5]    = 'No qualifying procedures were found.';
+
+exit-name[6]    = assert;
+exit-desc[6]    = 'Assertion failed';
 
 exit-name[32]   = bad-file;
 exit-desc[32]   = 'one or more input files were unreadable or empty.';

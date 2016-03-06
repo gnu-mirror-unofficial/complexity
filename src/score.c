@@ -26,6 +26,17 @@ static char const err_fmt[] = "error: %s %s\n";
 
 typedef score_t (handler_func_t)(state_t *);
 
+/**
+ * subexpression types that have been seen.  Tracking is only done within
+ * one parenthesized expression.  If two or more types are mixed, the
+ * expression gets penalized.  If there is ever an assignment within
+ * an expression, the expression is penalized.
+ */
+typedef struct {
+    int saw_and, saw_or, saw_assign, saw_relop;
+    score_t res;
+} subexpr_seen_t;
+
 /*
  * declare the dispatch functions and define the table.
  */
@@ -65,6 +76,8 @@ static handler_func_t * score_fun[TOKEN_MAX] = {
 #undef  _Ttbl_
 };
 
+#define APPLY_NEST_PENALTY(_s)   ((_s) * penalty)
+
 static score_t
 handle_subexpr(state_t * sc, bool is_for_clause);
 
@@ -102,11 +115,6 @@ next_score_token(state_t * sc)
     if ((tk == TKN_EOF) || (fs->fs_scan > sc->st_end))
         longjmp(bail_on_proc, 1);
 
-    sc->st_line_ct = fs->cur_line - sc->ln_st;
-
-    sc->st_non_comment_line_ct =
-        fs->nc_line - sc->st_non_comment_line_ct;
-
     if (tk != TKN_KW_GOTO)
         return tk;
     sc->goto_ct++;
@@ -119,18 +127,35 @@ unget_score_token(state_t * sc)
     unget_token(sc->st_fstate);
 }
 
+/**
+ * The open brace for the statement block has already been processed.
+ */
 static score_t
 handle_stmt_block(state_t * sc)
 {
     score_t res = 0;
 
-    for (;;) {
-        token_t ev = next_score_token(sc);
+    /*
+     * Bookwork for the first call for a procedure
+     */
+    token_t ev = next_score_token(sc);
+    if (sc->st_nc_line_ct < 0) {
+        sc->st_line_ct    = sc->st_fstate->cur_line;
+        sc->st_nc_line_ct = sc->st_fstate->nc_line;
+    }
+
+    static int depth = 0;
+    if ((++depth == 5) && HAVE_OPT(TRACE))
+        fprintf(trace_fp, "line %5d nesting depth reached *FIVE* levels\n",
+                sc->st_fstate->cur_line);
+
+    for (;; ev = next_score_token(sc)) {
         switch (ev) {
         case TKN_LIT_CBRACE:
             if (HAVE_OPT(TRACE))
                 fprintf(trace_fp, "line %5d score %5u\n",
                         sc->st_fstate->cur_line, (unsigned int)res);
+            depth--;
             return (res > MAX_SCORE) ? MAX_SCORE : res;
 
         default:
@@ -153,12 +178,7 @@ handle_noop(state_t * sc)
     return 0;
 }
 
-typedef struct {
-    int saw_and, saw_or, saw_assign, saw_relop;
-    score_t res;
-} subexpr_seen_t;
-
-static void
+static char const *
 fiddle_subexpr_score(subexpr_seen_t * ses)
 {
     int which =
@@ -173,11 +193,11 @@ fiddle_subexpr_score(subexpr_seen_t * ses)
     case 0x01:
     case 0x02:
     case 0x08:
-        return;
+        return NULL;
 
     case 0x04:
         ses->res += penalty * (score_t)ses->saw_assign;
-        return;
+        return "assignment within expression";
 
     case 0x07:
         ses->res += penalty * (score_t)ses->saw_assign;
@@ -186,39 +206,40 @@ fiddle_subexpr_score(subexpr_seen_t * ses)
     case 0x03:
         tmp = (ses->saw_and + 1) * ses->saw_or;
         ses->res += penalty * (score_t)tmp;
-        return;
+        return "AND and OR expressions";
 
     case 0x05:
     case 0x06:
         ses->res += penalty * (score_t)ses->saw_assign;
         ses->res += (score_t)(ses->saw_and + ses->saw_or);
-        return;
+        return "assignments and boolean operators";
 
     case 0x09:
     case 0x0A:
         ses->res += subexp_penalty * (score_t)ses->saw_relop;
-        return;
+        return "comparison and boolean operators";
 
     case 0x0B:
         tmp = (ses->saw_and + 1) * ses->saw_or;
         ses->res += subexp_penalty * (score_t)(ses->saw_relop * tmp);
-        return;
+        return "AND, OR and comparison operators";
 
     case 0x0C:
         ses->res += penalty * (score_t)ses->saw_assign;
         ses->res += subexp_penalty * (score_t)ses->saw_relop;
-        return;
+        return "assignments and comparison operators";
 
     case 0x0D:
     case 0x0E:
         ses->res += penalty * (score_t)(
             ses->saw_assign + ses->saw_relop + ses->saw_and + ses->saw_or);
-        return;
+        return "many kinds of operators";
 
     case 0x0F:
         tmp = (ses->saw_and + 1) * ses->saw_or;
         ses->res += penalty * (score_t)(
             ses->saw_assign + ses->saw_relop + tmp);
+        return "*ALL* kinds of operators";
     }
 }
 
@@ -231,10 +252,10 @@ handle_TKN_LIT_SEMI(state_t * sc)
 static score_t
 handle_subexpr(state_t * sc, bool is_for_clause)
 {
-    int saw_name = 0;
-    int stline   = sc->st_non_comment_line_ct;
+    bool saw_name = false;
+    int  tkn_ct   =  0;
     subexpr_seen_t ses = { 0, 0, 0, 0, 1.0 };
-    int tkn_ct   =  0;
+    int const start_nc_ln_ct = sc->st_fstate->nc_line;
 
     for (;;) {
         token_t ev = next_score_token(sc);
@@ -245,9 +266,14 @@ handle_subexpr(state_t * sc, bool is_for_clause)
             if (tkn_ct <= 2) // name + close paren
                 return 0;
 
-            if (! is_for_clause)
-                fiddle_subexpr_score(&ses);
-            ses.res += (score_t)(sc->st_non_comment_line_ct - stline);
+            if (! is_for_clause) {
+                char const * msg = fiddle_subexpr_score(&ses);
+                if ((msg != NULL) && HAVE_OPT(TRACE))
+                    fprintf(trace_fp, "line %5d expression score adjusted due "
+                            "to mix of %s\n", sc->st_fstate->nc_line, msg);
+            }
+
+            ses.res += (score_t)(sc->st_fstate->nc_line - start_nc_ln_ct);
             if (ses.res > 1)
                 ses.res -= 1;
             if (HAVE_OPT(TRACE))
@@ -300,7 +326,7 @@ handle_subexpr(state_t * sc, bool is_for_clause)
             break;
 
         case TKN_LIT_OBRACE:
-            ses.res += NESTING_PENALTY(handle_stmt_block(sc));
+            ses.res += APPLY_NEST_PENALTY(handle_stmt_block(sc));
             break;
 
         case TKN_LIT_OPNBRACK:
@@ -324,13 +350,19 @@ static score_t
 handle_parms(state_t * sc)
 {
     score_t res = 0;
-    int stline = sc->st_non_comment_line_ct - 1;
+    int const start_nc_ln_ct = sc->st_fstate->nc_line;
 
     for (;;) {
         token_t ev = next_score_token(sc);
         switch (ev) {
         case TKN_LIT_CLSPAREN:
-            return (score_t)(sc->st_non_comment_line_ct - stline) + res;
+        {
+            /*
+             * Set to zero if we are on the same non-comment line count
+             */
+            int l_ct_delta = sc->st_fstate->nc_line - start_nc_ln_ct;
+            return (score_t)l_ct_delta + res;
+        }
 
         case TKN_LIT_OPNPAREN:
         {
@@ -341,7 +373,7 @@ handle_parms(state_t * sc)
         }
 
         case TKN_LIT_OBRACE:
-            res += NESTING_PENALTY(handle_stmt_block(sc));
+            res += APPLY_NEST_PENALTY(handle_stmt_block(sc));
             break;
 
         case TKN_LIT_OPNBRACK:
@@ -359,11 +391,17 @@ handle_parms(state_t * sc)
     }
 }
 
+/**
+ * expressions always count at least 1.  Additional points
+ * are added for multiple lines and complexity and lack
+ * of parentheses when there are operators of different
+ * precedence.
+ */
 static score_t
 handle_expression(state_t * sc)
 {
     score_t res = 1;
-    int stline  = sc->st_non_comment_line_ct;
+    int const start_nc_ln_ct = sc->st_fstate->nc_line;
     bool paren_is_parms    = true;
     bool cbrace_needs_semi = false;
 
@@ -406,7 +444,7 @@ handle_expression(state_t * sc)
             break;
 
         case TKN_LIT_OBRACE:
-            res += NESTING_PENALTY(handle_stmt_block(sc));
+            res += APPLY_NEST_PENALTY(handle_stmt_block(sc));
             if (! cbrace_needs_semi) {
                 /*
                  * Someone has mutilated C syntax and made a macro into
@@ -454,7 +492,11 @@ handle_expression(state_t * sc)
 
 done:
     {
-        score_t min = 1 + (sc->st_non_comment_line_ct - stline);
+        /*
+         * Set the minimum to the number of lines used by the expr
+         * and limit the maximum to MAX_SCORE
+         */
+        score_t min = 1 + (sc->st_fstate->nc_line - start_nc_ln_ct);
         if (res < min)
             res = min;
         else if (res > MAX_SCORE)
@@ -532,7 +574,7 @@ handle_TKN_KW_DO(state_t * sc)
 
     switch (ev) {
     case TKN_LIT_OBRACE:
-        res += NESTING_PENALTY(handle_stmt_block(sc));
+        res += APPLY_NEST_PENALTY(handle_stmt_block(sc));
         break;
 
     case TKN_LIT_OPNPAREN:
@@ -544,7 +586,7 @@ handle_TKN_KW_DO(state_t * sc)
     case TKN_KW_FOR:
     case TKN_KW_SWITCH:
     case TKN_KW_WHILE:
-        res += NESTING_PENALTY(score_fun[ev](sc));
+        res += APPLY_NEST_PENALTY(score_fun[ev](sc));
         break;
 
     default:
@@ -560,7 +602,7 @@ handle_TKN_KW_DO(state_t * sc)
         return bad_token(sc, "while loop expression", ev);
 
     {
-        int psc = NESTING_PENALTY(handle_subexpr(sc, false));
+        int psc = APPLY_NEST_PENALTY(handle_subexpr(sc, false));
         if (psc < 1)
             psc = 1;
         res += psc;
@@ -594,7 +636,7 @@ do_if_clause:
 
     switch (ev) {
     case TKN_LIT_OBRACE:
-        res += NESTING_PENALTY(handle_stmt_block(sc));
+        res += APPLY_NEST_PENALTY(handle_stmt_block(sc));
         break;
 
     case TKN_LIT_SEMI:
@@ -623,7 +665,7 @@ do_if_clause:
     case TKN_KW_FOR:
     case TKN_KW_SWITCH:
     case TKN_KW_WHILE:
-        res += NESTING_PENALTY(score_fun[ev](sc));
+        res += APPLY_NEST_PENALTY(score_fun[ev](sc));
         break;
 
     default:
@@ -668,13 +710,13 @@ handle_TKN_KW_FOR(state_t * sc)
     if (res < 1)
         res = 1;
     if (! real_for)
-        res = NESTING_PENALTY(res);
+        res *= penalty;
 
     for (;;) {
         ev = next_score_token(sc);
         switch (ev) {
         case TKN_LIT_OBRACE:
-            res += NESTING_PENALTY(handle_stmt_block(sc));
+            res += APPLY_NEST_PENALTY(handle_stmt_block(sc));
             return res;
 
         case TKN_LIT_SEMI:
@@ -685,7 +727,7 @@ handle_TKN_KW_FOR(state_t * sc)
         case TKN_KW_FOR:
         case TKN_KW_SWITCH:
         case TKN_KW_WHILE:
-            res += NESTING_PENALTY(score_fun[ev](sc));
+            res += APPLY_NEST_PENALTY(score_fun[ev](sc));
             return res;
 
         case TKN_LIT_OPNPAREN:
@@ -744,6 +786,22 @@ handle_array_init(state_t * sc)
     return res + handle_expression(sc);
 }
 
+/**
+ * return 'true' if the closing brace is on its own line.
+ * This affects both the non-comment line count and
+ * the total line count.
+ */
+static inline bool
+check_own_line_close(state_t * sc)
+{
+    char const * p = sc->st_fstate->fs_scan - 1;
+    CX_ASSERT(*p == '}');
+    return IS_END_OF_LINE_CHAR(p[-1]);
+}
+
+/**
+ * Score the procedure we just found.
+ */
 void
 score_proc(state_t * score)
 {
@@ -766,6 +824,9 @@ score_proc(state_t * score)
         return;
     }
 
+    score->st_line_ct    = \
+        score->st_nc_line_ct = -1;
+
     score->score = handle_stmt_block(score);
     if (score->goto_ct > 0)
         score->score += score->goto_ct * scaling;
@@ -777,12 +838,29 @@ score_proc(state_t * score)
         score->score += penalty;
     }
 
-    if (score->score < MAX_SCORE)
+    /*
+     * No negative scores and no scores beyond the completely ridiculous
+     * value of MAX_SCORE
+     */
+    if (score->score < 0)
+        score->score = 0.0;
+
+    else if (score->score < MAX_SCORE)
         score->score = (score_t)(unsigned int)((score->score * scaling) + 0.9);
-    if (--score->st_line_ct <= 0)
-        score->st_line_ct = 1;
-    if (--score->st_non_comment_line_ct <= 0)
-        score->st_non_comment_line_ct = 1;
+
+    if (score->score > MAX_SCORE)
+        score->score = MAX_SCORE;
+
+    /*
+     * Set the line counts for our score
+     */
+    bool close_on_own_line = check_own_line_close(score);
+    int ct = 1 + (score->st_fstate->cur_line - score->st_line_ct) -
+        (close_on_own_line ? 1 : 0);
+    score->st_line_ct    = ct;
+    ct = 1 + (score->st_fstate->nc_line  - score->st_nc_line_ct) -
+        (close_on_own_line ? 1 : 0);
+    score->st_nc_line_ct = ct;
 }
 /*
  * Local Variables:

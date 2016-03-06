@@ -96,7 +96,7 @@ typedef struct {
     char const *    fs_fname;
     char const *    fs_text;
     char const *    fs_scan;
-    bool            fs_bol;
+    bool            fs_bol;     //!< Beginning Of Line
     token_t         last_tkn;
     char const *    tkn_text;
     size_t          tkn_len;
@@ -107,7 +107,7 @@ typedef struct {
 
 typedef struct {
     int             st_line_ct;
-    int             st_non_comment_line_ct;
+    int             st_nc_line_ct;
     int             ln_st;
     int             ncln_st;
     int             goto_ct;
@@ -124,7 +124,7 @@ static inline void state_init(state_t * st, fstate_t * fs)
     memset(st, NUL, sizeof(*st));
     st->ln_st     = fs->cur_line;
     st->st_fstate = fs;
-    st->st_non_comment_line_ct = fs->nc_line;
+    st->st_nc_line_ct = fs->nc_line;
     if (fs->tkn_len >= sizeof(st->pname))
         fs->tkn_len = sizeof(st->pname) - 1;
     memcpy(st->pname, fs->tkn_text, fs->tkn_len);
@@ -135,8 +135,6 @@ static inline void state_init(state_t * st, fstate_t * fs)
 extern score_t penalty;
 extern score_t subexp_penalty;
 extern score_t scaling;
-
-#define NESTING_PENALTY(_s)   ((_s) * penalty)
 
 extern token_t
 next_token(fstate_t * fs);
