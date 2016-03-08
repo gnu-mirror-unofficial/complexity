@@ -843,7 +843,8 @@ score_proc(state_t * score)
     if (score->st_depth_warned >= 5) {
         fprintf(stderr, "NOTE: proc %s in file %s line %u\n"
                 "\tnesting depth reached level %u\n",
-                score->pname, fs->fs_fname, score->proc_line, score->st_depth_warned);
+                score->pname, score->st_fstate->fs_fname,
+                score->proc_line, score->st_depth_warned);
         if (score->st_depth_warned >= 7)
             fputs("==>\t*seriously consider rewriting the procedure*.\n", stderr);
     }
