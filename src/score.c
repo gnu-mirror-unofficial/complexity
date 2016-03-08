@@ -148,14 +148,8 @@ handle_stmt_block(state_t * sc)
         sc->st_nc_line_ct = fs->nc_line;
     }
 
-    if ((++statement_depth >= 5) && (sc->st_depth_warned < statement_depth)) {
+    if (++statement_depth > sc->st_depth_warned)
         sc->st_depth_warned = statement_depth;
-        fprintf(stderr, "NOTE: proc %s in file %s line %u\n"
-                "\tnesting depth reached level %u\n",
-                sc->pname, fs->fs_fname, fs->cur_line, statement_depth);
-        if (statement_depth == 7)
-            fputs("==>\t*seriously consider rewriting the procedure*.\n", stderr);
-    }
 
     for (;; ev = next_score_token(sc)) {
         switch (ev) {
@@ -845,6 +839,14 @@ score_proc(state_t * score)
     score->score = handle_stmt_block(score);
     if (score->goto_ct > 0)
         score->score += score->goto_ct * scaling;
+
+    if (score->st_depth_warned >= 5) {
+        fprintf(stderr, "NOTE: proc %s in file %s line %u\n"
+                "\tnesting depth reached level %u\n",
+                score->pname, fs->fs_fname, score->proc_line, score->st_depth_warned);
+        if (score->st_depth_warned >= 7)
+            fputs("==>\t*seriously consider rewriting the procedure*.\n", stderr);
+    }
 
     if (score->st_fstate->fs_scan + 2 <= score->st_end) {
         fprintf(stderr, "procedure %s in %s ended before final close bracket\n",

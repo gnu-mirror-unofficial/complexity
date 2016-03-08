@@ -190,7 +190,7 @@ the opening brace.
 The compiler will accept source with arbitrarily deep levels of logic nesting.
 This program will complain in each procedure that has logic that exceeds
 four levels of nesting.
-@sample
+@example
 foo()
 @{
   if (e) @{
@@ -200,7 +200,7 @@ foo()
           you_will_get_warned();
   @} @} @} @}
 @}
-@end sample
+@end example
 These warnings will not directly affect the procedure score,
 but the ``you_will_get_warned()'' line adds ``1.9 ** 4'' (about 13) raw
 points to the procedure score.
