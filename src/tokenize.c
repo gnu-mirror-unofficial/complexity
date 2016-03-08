@@ -27,11 +27,21 @@ skip_comment(fstate_t * fs)
     char const * p = fs->fs_scan + 1; // skip the '*' from the "/*"
 
     for (;;) {
-        while (! IS_STAR_OR_NL_CHAR(*p))  p++;
+        p = BRK_STAR_OR_NL_CHARS(p);
 
         switch (*p) {
-        case NUL:  fs->fs_scan = p;   return false;
-        case NL: fs->cur_line++; p++; break;
+        case NUL:
+            fs->fs_scan = p;
+            return false;
+
+        case NL:
+            fs->cur_line++;
+            /* FALLTHROUGH */
+
+        case CR:
+            p++;
+            break;
+
         case '*':
             if (*++p == '/') {
                 fs->fs_scan = p + 1;
@@ -44,8 +54,17 @@ skip_comment(fstate_t * fs)
 static bool
 skip_to_eol(fstate_t * fs)
 {
-    while (! IS_END_OF_LINE_CHAR(*(++fs->fs_scan)))   ;
-    return fs->fs_scan[0] == NL;
+    fs->fs_scan = BRK_END_OF_LINE_CHARS(fs->fs_scan);
+    switch (fs->fs_scan[0]) {
+    case CR:
+        if (fs->fs_scan[1] == NL)
+            fs->fs_scan++;
+        /* FALLTHROUGH */
+    case NL:
+        return true;
+    default:
+        return false;
+    }
 }
 
 static token_t
@@ -96,6 +115,9 @@ sglquot_check(fstate_t * fs)
     return check_quote(fs, '\'');
 }
 
+/**
+ * handle comments
+ */
 static inline bool
 comment_check(fstate_t * fs, char const * s, token_t * res)
 {
@@ -113,6 +135,10 @@ comment_check(fstate_t * fs, char const * s, token_t * res)
             *res = TKN_EOF;
         return true;
 
+    case CR:
+        if (s[1] == NL)
+            fs->fs_scan++;
+        /* FALLTHROUGH */
     case NL:
         return true;
 
@@ -125,6 +151,10 @@ comment_check(fstate_t * fs, char const * s, token_t * res)
     }
 }
 
+/**
+ * handle a preprocessing directive.  If the line ends with a backslash,
+ * then the next line is considered part of that directive.
+ */
 static token_t
 hash_check(fstate_t * fs)
 {
@@ -135,7 +165,7 @@ hash_check(fstate_t * fs)
     char const * s = fs->fs_scan;
     char ch;
 
-    while (*s != NL) {
+    while (! IS_END_OF_LINE_CHAR(*s)) {
         switch (*s) {
         case '\\':
             ch = *++s;
@@ -163,6 +193,9 @@ hash_check(fstate_t * fs)
         }
         s++;
     }
+
+    if ((s[0] == CR) && (s[1] == NL))
+        s++;
 
  leave:
     fs->fs_scan = s;
@@ -390,7 +423,8 @@ extern_c_check(fstate_t * fs)
     int nl_ct = 0;
     char const * s = fs->fs_scan;
     while (IS_SPACE_CHAR(*s)) {
-        if (*s == NL) nl_ct++;
+        if (*s == NL)
+            nl_ct++;
         s++;
     }
 
@@ -398,7 +432,8 @@ extern_c_check(fstate_t * fs)
         return TKN_NAME;
     s += 3;
     while (IS_SPACE_CHAR(*s)) {
-        if (*s == NL) nl_ct++;
+        if (*s == NL)
+            nl_ct++;
         s++;
     }
     if (*s != '{') return TKN_NAME;
@@ -417,7 +452,7 @@ next_nonblank(fstate_t * fs)
             fs->fs_bol = true;
             /* FALLTHROUGH */
 
-        case ' ': case '\t': case '\f': case '\v':
+        case ' ': case '\t': case '\f': case '\v': case CR:
             fs->fs_scan++;
             break;
 

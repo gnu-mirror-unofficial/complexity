@@ -41,6 +41,10 @@
 # define NL  '\n'
 #endif
 
+#ifndef CR
+# define CR  '\r'
+#endif
+
 #define TOKEN_TABLE                     \
     _Ttbl_(  0, TKN_EMPTY)              \
     _Ttbl_(  1, TKN_EOF)                \
