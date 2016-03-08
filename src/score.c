@@ -838,6 +838,7 @@ score_proc(state_t * score)
         return;
     }
 
+    statement_depth = 0;
     score->st_line_ct    = \
         score->st_nc_line_ct = -1;
 
