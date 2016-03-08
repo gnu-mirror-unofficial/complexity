@@ -333,9 +333,8 @@ popen_unifdef(char const * fname)
         FILE * res;
         if (bf == NULL)
             die(COMPLEXITY_EXIT_NOMEM, nomem_fmt, bfsz);
-        if (snprintf(bf, bfsz, "%s %s", cmd, fname) >= bfsz)
-            die(COMPLEXITY_EXIT_FAILURE,
-                "``%s'' does not contain ``%s''\n", bf, fname);
+        size_t sz = snprintf(bf, bfsz, "%s %s", cmd, fname);
+        CX_ASSERT(sz < bfsz);
 
         res  = popen(bf, "r");
         free(bf);
@@ -431,7 +430,7 @@ re_die(int code, regex_t * re, char const * pat)
 {
     char msg[64];
     (void)regerror(code, re, msg, sizeof(msg));
-    die(COMPLEXITY_EXIT_NOMEM, "re error %s (%u) compiling ``%s''\n",
+    die(COMPLEXITY_EXIT_ASSERT, "re error %s (%u) compiling ''%s''\n",
         msg, (unsigned)code, pat);
 }
 

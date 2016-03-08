@@ -113,6 +113,7 @@ typedef struct {
     int             goto_ct;
     int             proc_line;
     int             st_colon_need;
+    int             st_depth_warned;
     score_t         score;
     char *          st_end;
     fstate_t *      st_fstate;
@@ -121,12 +122,12 @@ typedef struct {
 
 static inline void state_init(state_t * st, fstate_t * fs)
 {
-    memset(st, NUL, sizeof(*st));
-    st->ln_st     = fs->cur_line;
-    st->st_fstate = fs;
-    st->st_nc_line_ct = fs->nc_line;
-    if (fs->tkn_len >= sizeof(st->pname))
-        fs->tkn_len = sizeof(st->pname) - 1;
+    *st = (state_t) {
+        .ln_st         = fs->cur_line,
+        .st_fstate     = fs,
+        .st_nc_line_ct = fs->nc_line
+    };
+
     memcpy(st->pname, fs->tkn_text, fs->tkn_len);
 }
 

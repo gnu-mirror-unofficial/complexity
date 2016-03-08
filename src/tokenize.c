@@ -369,8 +369,12 @@ keyword_check(fstate_t * fs)
             hi = ix - 1;
     } while (lo <= hi);
 
-    while (IS_NAME_CHAR(*++(fs->fs_scan)))  ;
-    return TKN_NAME;
+    for (;;) {
+        fs->fs_scan = SPN_NAME_CHARS(fs->fs_scan + 1);
+        if ((fs->fs_scan[0] != ':') || (fs->fs_scan[1] != ':'))
+            return TKN_NAME;
+        fs->fs_scan += 2;
+    }
 }
 
 void
@@ -443,7 +447,7 @@ next_token(fstate_t * fs)
 
         case 'A' ... 'Z':
         case '_': case '$':
-            while (IS_NAME_CHAR(fs->fs_scan[0]))  fs->fs_scan++;
+            fs->fs_scan = SPN_NAME_CHARS(fs->fs_scan + 1);
             res = TKN_NAME;
             break;
 
@@ -454,7 +458,7 @@ next_token(fstate_t * fs)
             break;
 
         case '0' ... '9':
-            while (IS_NAME_CHAR(fs->fs_scan[0]))  fs->fs_scan++;
+            fs->fs_scan = SPN_NAME_CHARS(fs->fs_scan);
             res = TKN_NUMBER;
             break;
 
@@ -478,7 +482,6 @@ next_token(fstate_t * fs)
         case '(':  res = TKN_LIT_OPNPAREN;  break;
         case ')':  res = TKN_LIT_CLSPAREN;  break;
         case ',':  res = TKN_LIT_COMMA;     break;
-        case ':':  res = TKN_LIT_COLON;     break;
         case ';':  res = TKN_LIT_SEMI;      break;
         case '?':  res = TKN_LIT_QUESTION;  break;
         case '[':  res = TKN_LIT_OPNBRACK;  break;
@@ -487,9 +490,21 @@ next_token(fstate_t * fs)
         case '}':  res = TKN_LIT_CBRACE;    break;
 
         case '\\': res = TKN_EMPTY;         break;
-
-
         case '~':  res = TKN_ARITH_OP;      break;
+
+        case ':':
+            if (fs->fs_scan[0] == ':') {
+                /*
+                 * double colon name space operator -- basically
+                 * part of the name.
+                 */
+                fs->fs_scan++;
+                (void)keyword_check(fs);
+                res = TKN_NAME;
+            } else {
+                res = TKN_LIT_COLON;
+            }
+            break;
 
         case '@':
         case '`':

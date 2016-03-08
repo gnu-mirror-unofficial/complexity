@@ -79,6 +79,8 @@ static handler_func_t * score_fun[TOKEN_MAX] = {
 
 #define APPLY_NEST_PENALTY(_s)   ((_s) * penalty)
 
+static int statement_depth = 0;
+
 static score_t
 handle_subexpr(state_t * sc, bool is_for_clause);
 
@@ -134,6 +136,7 @@ unget_score_token(state_t * sc)
 static score_t
 handle_stmt_block(state_t * sc)
 {
+    fstate_t * fs = sc->st_fstate;
     score_t res = 0;
 
     /*
@@ -141,22 +144,26 @@ handle_stmt_block(state_t * sc)
      */
     token_t ev = next_score_token(sc);
     if (sc->st_nc_line_ct < 0) {
-        sc->st_line_ct    = sc->st_fstate->cur_line;
-        sc->st_nc_line_ct = sc->st_fstate->nc_line;
+        sc->st_line_ct    = fs->cur_line;
+        sc->st_nc_line_ct = fs->nc_line;
     }
 
-    static int depth = 0;
-    if ((++depth == 5) && HAVE_OPT(TRACE))
-        fprintf(trace_fp, "line %5d nesting depth reached *FIVE* levels\n",
-                sc->st_fstate->cur_line);
+    if ((++statement_depth >= 5) && (sc->st_depth_warned < statement_depth)) {
+        sc->st_depth_warned = statement_depth;
+        fprintf(stderr, "NOTE: proc %s in file %s line %u\n"
+                "\tnesting depth reached level %u\n",
+                sc->pname, fs->fs_fname, fs->cur_line, statement_depth);
+        if (statement_depth == 7)
+            fputs("==>\t*seriously consider rewriting the procedure*.\n", stderr);
+    }
 
     for (;; ev = next_score_token(sc)) {
         switch (ev) {
         case TKN_LIT_CBRACE:
             if (HAVE_OPT(TRACE))
                 fprintf(trace_fp, line_score,
-                        sc->st_fstate->cur_line, (unsigned int)res);
-            depth--;
+                        fs->cur_line, (unsigned int)res);
+            statement_depth--;
             return (res > MAX_SCORE) ? MAX_SCORE : res;
 
         default:
@@ -302,7 +309,10 @@ handle_subexpr(state_t * sc, bool is_for_clause)
             break;
 
         case TKN_ASSIGN:
-            ses.saw_assign++;
+            /*
+             * Only worry over assignment operators in nested expressions
+             */
+            ses.saw_assign += (statement_depth > 1) ? 1 : 0;
             break;
 
         case TKN_LOGIC_AND:
