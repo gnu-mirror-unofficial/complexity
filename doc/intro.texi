@@ -36,6 +36,7 @@ understand.
 * logic conditions::        Logic Conditions
 * personal experience::     Personal Experience
 * rationale summary::       Rationale Summary
+* language constraints::    Constraints on Source Code
 @end menu
 
 @node    code length
@@ -168,3 +169,39 @@ tweaked to suit personal taste or gathered experience.
 @ref{complexity demi-nesting-penalty, nested expression scoring factor},
 but also @xref{complexity scale, normalization scaling factor},
 to adjust scores to approximate scores rendered by @code{pmccabe}).
+
+
+@node language constraints
+@section Constraints on Source Code
+
+Be forewarned: this program has its own parser.  It is expected that
+users would have the code compiled first, so no attempt at all is made
+to diagnose syntax errors.  But there are further constraints that
+the compiler does not impose.  Patches to relax these constraints
+are welcome.
+
+@itemize
+@item
+Procedures must end with a closing brace in column 1.
+It is also acceptable to have the closing brace on the same line as
+the opening brace.
+
+@item
+The compiler will accept source with arbitrarily deep levels of logic nesting.
+This program will complain in each procedure that has logic that exceeds
+four levels of nesting.
+@sample
+foo()
+@{
+  if (e) @{
+    if (f) @{
+      if (g) @{
+        if (h) @{
+          you_will_get_warned();
+  @} @} @} @}
+@}
+@end sample
+These warnings will not directly affect the procedure score,
+but the ``you_will_get_warned()'' line adds ``1.9 ** 4'' (about 13) raw
+points to the procedure score.
+@end itemize
