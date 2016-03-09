@@ -50,11 +50,35 @@ test $lc -eq 1 || {
     fail_exit
 }
 
-$cpx -t0 $samples > ${outfile} 2>&1
+sedcmd='/^[A-Z]/d;/^$/d;/^Highest score:/d;s@ [^ ]*tests/@ @'
+$cpx -t0 $samples 2>&1 | \
+    sed "$sedcmd" > ${outfile}
+sampfile="${tstdir}/complexity.samp"
+sed "$sedcmd" > ${sampfile} <<-_EOF_
+Complexity Scores
+Score | ln-ct | nc-lns| file-name(line): proc-name
+    0       1       1   .../tests/sample.c(1): oneline
+    0       1       1   .../tests/sample.c(15): tst
+    1       1       1   .../tests/sample.c(3): continuesameline
+    1       2       2   .../tests/sample.c(20): test
+    1       4       3   .../tests/sample.c(7): derefloop
+
+Complexity Histogram
+Score-Range  Lin-Ct
+    0-9           8 ************************************************************
+
+Scored procedure ct:        5
+Non-comment line ct:        8
+Average line score:         1
+25%-ile score:              0 (75% in higher score procs)
+50%-ile score:              1 (half in higher score procs)
+75%-ile score:              1 (25% in higher score procs)
+Highest score:              1 (continuesameline() in /.../sample.c)
+_EOF_
 set +e
 grep -s -E '^error on ' ${outfile} && \
     fail_exit
-
-test $(grep -E '^ *[01]  *1  *1 ' ${outfile} | wc -l) -ne 2 && \
+cmp ${outfile} ${sampfile} || \
     fail_exit
+
 exit 0

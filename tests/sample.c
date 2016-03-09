@@ -10,3 +10,14 @@ int derefloop() {
     for (;;)
         return a ? *a : 0;
 }
+
+void tst(int z)
+{
+  f = R(z);
+}
+
+void test(int z)
+{
+  wchar_t * str = L"abcd";
+  R(z);
+}
