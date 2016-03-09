@@ -251,13 +251,18 @@ slash_check(fstate_t * fs)
     token_t res = TKN_ARITH_OP;
 
     switch (fs->fs_scan[0]) {
-    case FSLASH: skip_to_eol(fs); res = TKN_EMPTY;  break;
-    case '=': fs->fs_scan++;      res = TKN_ASSIGN; break;
+    case FSLASH:
+        skip_to_eol(fs);
+        res = TKN_EMPTY;
+        break;
+
+    case '=':
+        fs->fs_scan++;
+        res = TKN_ASSIGN;
+        break;
+
     case '*':
-        if (! skip_comment(fs))
-            res = TKN_EOF;
-        else
-            res = TKN_EMPTY;
+        res = skip_comment(fs) ? TKN_EMPTY : TKN_EOF;
         break;
     }
 
@@ -270,7 +275,8 @@ less_check(fstate_t * fs)
     token_t res = TKN_REL_OP;
 
     switch (fs->fs_scan[0]) {
-    case '<': fs->fs_scan++;
+    case '<':
+        fs->fs_scan++;
         if (fs->fs_scan[0] == '=') {
             fs->fs_scan++;
             res = TKN_ASSIGN;
@@ -279,7 +285,9 @@ less_check(fstate_t * fs)
             res = TKN_ARITH_OP;
         break;
 
-    case '=': fs->fs_scan++; break;
+    case '=':
+        fs->fs_scan++;
+        break;
     }
 
     return res;
@@ -302,7 +310,8 @@ greater_check(fstate_t * fs)
     token_t res = TKN_REL_OP;
 
     switch (fs->fs_scan[0]) {
-    case '>': fs->fs_scan++;
+    case '>':
+        fs->fs_scan++;
         if (fs->fs_scan[0] == '=') {
             fs->fs_scan++;
             res = TKN_ASSIGN;
@@ -311,7 +320,9 @@ greater_check(fstate_t * fs)
             res = TKN_ARITH_OP;
         break;
 
-    case '=': fs->fs_scan++; break;
+    case '=':
+        fs->fs_scan++;
+        break;
     }
 
     return res;
@@ -322,8 +333,9 @@ carat_check(fstate_t * fs)
 {
     token_t res = TKN_ARITH_OP;
 
-    switch (fs->fs_scan[0]) {
-    case '=': fs->fs_scan++;      res = TKN_ASSIGN; break;
+    if (fs->fs_scan[0] == '=') {
+        fs->fs_scan++;
+        res = TKN_ASSIGN;
     }
 
     return res;
@@ -466,7 +478,7 @@ next_token(fstate_t * fs)
 
         case 'A' ... 'Z':
         case '_': case '$':
-            fs->fs_scan = SPN_NAME_CHARS(fs->fs_scan + 1);
+            fs->fs_scan = SPN_NAME_CHARS(fs->fs_scan);
             res = TKN_NAME;
             break;
 
