@@ -43,7 +43,7 @@ skip_comment(fstate_t * fs)
             break;
 
         case '*':
-            if (*++p == '/') {
+            if (*++p == FSLASH) {
                 fs->fs_scan = p + 1;
                 return true;
             }
@@ -84,7 +84,7 @@ check_quote(fstate_t * fs, char q)
 
     while (*s != q) {
         switch (*s) {
-        case '\\':
+        case BSLASH:
             if (*++s != NUL)
                 break;
             /* FALLTHROUGH */
@@ -106,13 +106,13 @@ leave:
 static token_t
 dblquot_check(fstate_t * fs)
 {
-    return check_quote(fs, '"');
+    return check_quote(fs, DQUOT);
 }
 
 static token_t
 sglquot_check(fstate_t * fs)
 {
-    return check_quote(fs, '\'');
+    return check_quote(fs, SQUOT);
 }
 
 /**
@@ -130,7 +130,7 @@ comment_check(fstate_t * fs, char const * s, token_t * res)
         }
         return false;
 
-    case '/': // "C++" comment to end of line
+    case FSLASH: // "C++" comment to end of line
         if (! skip_to_eol(fs))
             *res = TKN_EOF;
         return true;
@@ -165,39 +165,23 @@ hash_check(fstate_t * fs)
     char const * s = fs->fs_scan;
     char ch;
 
-    while (! IS_END_OF_LINE_CHAR(*s)) {
-        switch (*s) {
-        case '\\':
-            ch = *++s;
-            switch (ch) {
-            case NUL:
-                goto eof_token;
-            case NL:
-                fs->cur_line++;
-            }
-            break; // ignore the character whatever it is.
-
-        case NUL:
-        eof_token:
+    for (;;) {
+        s = BRK_END_OF_LINE_CHARS(s);
+        if (*s == NUL) {
             res = TKN_EOF;
-            goto leave;
-
-        case '/':
-            if (! comment_check(fs, ++s, &res))
-                goto leave;
-            s = fs->fs_scan; // now at next char to examine
-            continue;
-
-        default:
             break;
         }
-        s++;
+
+        if ((s > fs->fs_scan) && (s[-1] == BSLASH)) {
+            if (*(s++) == NL)
+                fs->cur_line++;
+            continue;
+        }
+
+        s += ((s[0] == CR) && (s[1] == NL)) ? 2 : 1;
+        break;
     }
 
-    if ((s[0] == CR) && (s[1] == NL))
-        s++;
-
- leave:
     fs->fs_scan = s;
     fs->fs_bol  = true;
     return res;
@@ -267,7 +251,7 @@ slash_check(fstate_t * fs)
     token_t res = TKN_ARITH_OP;
 
     switch (fs->fs_scan[0]) {
-    case '/': skip_to_eol(fs); res = TKN_EMPTY;  break;
+    case FSLASH: skip_to_eol(fs); res = TKN_EMPTY;  break;
     case '=': fs->fs_scan++;      res = TKN_ASSIGN; break;
     case '*':
         if (! skip_comment(fs))
@@ -452,7 +436,7 @@ next_nonblank(fstate_t * fs)
             fs->fs_bol = true;
             /* FALLTHROUGH */
 
-        case ' ': case '\t': case '\f': case '\v': case CR:
+        case ' ': case HT: case FF: case VT: case CR:
             fs->fs_scan++;
             break;
 
@@ -497,35 +481,35 @@ next_token(fstate_t * fs)
             res = TKN_NUMBER;
             break;
 
-        case '!':  res = bang_check(   fs); break;
-        case '"':  res = dblquot_check(fs); break;
-        case '#':  res = hash_check(   fs); break;
-        case '%':  res = assign_check( fs); break;
-        case '&':  res = amph_check(   fs); break;
-        case '*':  res = assign_check( fs); break;
-        case '+':  res = plus_check(   fs); break;
-        case '-':  res = hyphen_check( fs); break;
-        case '.':  res = dot_check(    fs); break;
-        case '/':  res = slash_check(  fs); break;
-        case '<':  res = less_check(   fs); break;
-        case '=':  res = equal_check(  fs); break;
-        case '>':  res = greater_check(fs); break;
-        case '\'': res = sglquot_check(fs); break;
-        case '^':  res = carat_check(  fs); break;
-        case '|':  res = vertbar_check(fs); break;
+        case '!':     res = bang_check(   fs); break;
+        case DQUOT:   res = dblquot_check(fs); break;
+        case '#':     res = hash_check(   fs); break;
+        case '%':     res = assign_check( fs); break;
+        case '&':     res = amph_check(   fs); break;
+        case '*':     res = assign_check( fs); break;
+        case '+':     res = plus_check(   fs); break;
+        case '-':     res = hyphen_check( fs); break;
+        case '.':     res = dot_check(    fs); break;
+        case FSLASH:  res = slash_check(  fs); break;
+        case '<':     res = less_check(   fs); break;
+        case '=':     res = equal_check(  fs); break;
+        case '>':     res = greater_check(fs); break;
+        case SQUOT:   res = sglquot_check(fs); break;
+        case '^':     res = carat_check(  fs); break;
+        case '|':     res = vertbar_check(fs); break;
 
-        case '(':  res = TKN_LIT_OPNPAREN;  break;
-        case ')':  res = TKN_LIT_CLSPAREN;  break;
-        case ',':  res = TKN_LIT_COMMA;     break;
-        case ';':  res = TKN_LIT_SEMI;      break;
-        case '?':  res = TKN_LIT_QUESTION;  break;
-        case '[':  res = TKN_LIT_OPNBRACK;  break;
-        case ']':  res = TKN_LIT_CLSBRACK;  break;
-        case '{':  res = TKN_LIT_OBRACE;    break;
-        case '}':  res = TKN_LIT_CBRACE;    break;
+        case '(':     res = TKN_LIT_OPNPAREN;  break;
+        case ')':     res = TKN_LIT_CLSPAREN;  break;
+        case ',':     res = TKN_LIT_COMMA;     break;
+        case ';':     res = TKN_LIT_SEMI;      break;
+        case '?':     res = TKN_LIT_QUESTION;  break;
+        case '[':     res = TKN_LIT_OPNBRACK;  break;
+        case ']':     res = TKN_LIT_CLSBRACK;  break;
+        case '{':     res = TKN_LIT_OBRACE;    break;
+        case '}':     res = TKN_LIT_CBRACE;    break;
 
-        case '\\': res = TKN_EMPTY;         break;
-        case '~':  res = TKN_ARITH_OP;      break;
+        case BSLASH:  res = TKN_EMPTY;         break;
+        case '~':     res = TKN_ARITH_OP;      break;
 
         case ':':
             if (fs->fs_scan[0] == ':') {
@@ -596,7 +580,7 @@ skip_to_semi(fstate_t * fs)
             break;
 
         case TKN_LIT_CBRACE:
-            if ((--depth == 0) && (fs->tkn_text[-1] == '\n'))
+            if ((--depth == 0) && (fs->tkn_text[-1] == NL))
                 return tkn;
             break;
 

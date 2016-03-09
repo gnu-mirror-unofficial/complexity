@@ -45,6 +45,23 @@
 # define CR  '\r'
 #endif
 
+#ifndef HT
+# define HT  '\t'
+#endif
+
+#ifndef VT
+# define VT  '\v'
+#endif
+
+#ifndef FF
+# define FF  '\f'
+#endif
+
+#define BSLASH '\\'
+#define FSLASH '/'
+#define DQUOT  '"'
+#define SQUOT  '\''
+
 #define TOKEN_TABLE                     \
     _Ttbl_(  0, TKN_EMPTY)              \
     _Ttbl_(  1, TKN_EOF)                \
