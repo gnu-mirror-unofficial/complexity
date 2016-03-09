@@ -80,5 +80,5 @@ grep -s -E '^error on ' ${outfile} && \
     fail_exit
 cmp ${outfile} ${sampfile} || \
     fail_exit
-
+rm -f ${outfile} ${sampfile}
 exit 0
