@@ -239,6 +239,7 @@ flag = {
     descrip     = "procedure name to be ignored";
     arg-type    = string;
     max         = NOLIMIT;
+    stack-arg;
 
     doc = <<- _EODoc_
 	Some code has macros defined that confuse the lexical analysis.

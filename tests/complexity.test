@@ -31,7 +31,7 @@ trap "rm -f '$rcfile' '${outfile}'" 0
 cpx="${PWD}/src/complexity -< $rcfile"
 
 cd ${srcdir}
-${cpx} *.c > ${outfile}
+${cpx} -I main *.c > ${outfile}
 cd ${tstdir}
 
 set -e
