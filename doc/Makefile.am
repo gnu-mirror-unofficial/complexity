@@ -23,15 +23,26 @@ optdefs             = $(top_srcdir)/src/opts.def
 texi_tpl            = $(srcdir)/$(exe)-tpl.texi
 
 if AMDEP
-TXI_DEP             = -MF$(DEPDIR)/info-dep -MT$@
-MAN_DEP             = -MF$(DEPDIR)/man-dep  -MT$@
+TXI_DEP_FILE        = $(DEPDIR)/info-dep
+TXI_DEP             = -MF$(TXI_DEP_FILE) -MT$@
+$(TXI_DEP_FILE)     : texi-stamp
+
+MAN_DEP_FILE        = $(DEPDIR)/man-dep
+MAN_DEP             = -MF$(MAN_DEP_FILE)  -MT$@
+$(MAN_DEP_FILE)     : $(man_MANS)
+
 include $(DEPDIR)/info-dep
 include $(DEPDIR)/man-dep
 DEP_FILES           = $(DEPDIR)/info-dep $(DEPDIR)/man-dep
+$(DEP_FILES)        : $(DEPDIR)
+$(DEPDIR)           :
+	mkdir $@
+
 else
 TXI_DEP             =
 MAN_DEP             =
 DEP_FILES           =
+DEPDIR              =
 endif
 
 CLEANFILES          = *-stamp $(DEP_FILES) invoke-complexity.*
@@ -41,13 +52,13 @@ EXTRA_DIST          = $(exe)-tpl.texi fdl.texi intro.texi compute.texi \
 	gendocs_template invoke-$(exe).texi texi-stamp mk.sh
 DISTCLEANFILES      = $(BUILT_SOURCES) $(man_MANS)
 
-$(man_MANS)         : $(optdefs)
+$(man_MANS)         : $(optdefs) $(DEPDIR)
 	autogen $(MAN_DEP) -Tagman-cmd $(optdefs)
 
 $(exe).texi         : texi-stamp
 $(top_builddir)/src/complexity :
 
-texi-stamp          : $(optdefs)
+texi-stamp          : $(optdefs) $(DEPDIR)
 	exe="$(exe)" texi_tpl="$(texi_tpl)" optdefs="$(optdefs)" \
 	TXI_DEP="$(TXI_DEP)" \
 	top_srcdir="$(top_srcdir)" \

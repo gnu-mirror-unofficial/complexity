@@ -1,20 +1,24 @@
 # -*- Mode: shell-script -*-
 
-prog=`basename "$0" .sh`
-program=`basename "$0"`
-progdir=`cd \`dirname "$0"\` >/dev/null && pwd -P`
-progpid=$$
-readonly prog program progdir progpid
-
 # death rattle
 #
 die()
 { 
-    echo "${prog} error:  $*"
+    echo "${progname} error:  $*"
     backtrace
     kill -TERM ${progpid}
     exit 1
 } >&2
+
+set_prog() {
+    progpid=$$
+    readonly progpid
+    builddir=$PWD
+    rm -rf m4 build-aux 2>/dev/null
+    mkdir m4 build-aux
+    cd ${progdir}
+    chmod a+x tests/*.test
+}
 
 # append_all_gnulib_includes
 # ---------------------------------------------

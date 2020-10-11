@@ -138,9 +138,11 @@ This results in:
 @example
 [=`
 cd ${src}
-test -f opts.c || ln -s ${bld}/opts.c
-eval ${bld}/${cmd} *.c | sed 's/\\(.\\{66\\}\\).*/\\1/'
-test -L opts.c && rm opts.c
+if test -f opts.c
+then optsc=
+else optsc=${bld}/opts.c
+fi
+eval ${bld}/${cmd} *.c $optsc | sed 's/\\(.\\{66\\}\\).*/\\1/'
 `=]
 @end example
 @page
