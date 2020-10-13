@@ -8,8 +8,6 @@
 \#*
 .#*
 /complexity
-/opts.[ch]
-/char-types.h
 /sample*
 /*.i
 /.complex*rc

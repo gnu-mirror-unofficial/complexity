@@ -36,7 +36,7 @@ include $(DEPDIR)/man-dep
 DEP_FILES           = $(DEPDIR)/info-dep $(DEPDIR)/man-dep
 $(DEP_FILES)        : $(DEPDIR)
 $(DEPDIR)           :
-	mkdir $@
+	chmod 777 . && mkdir $@
 
 else
 TXI_DEP             =
@@ -53,6 +53,8 @@ EXTRA_DIST          = $(exe)-tpl.texi fdl.texi intro.texi compute.texi \
 DISTCLEANFILES      = $(BUILT_SOURCES) $(man_MANS)
 
 $(man_MANS)         : $(optdefs) $(DEPDIR)
+	top_srcdir="$(top_srcdir)" \
+	top_builddir="$(top_builddir)" \
 	autogen $(MAN_DEP) -Tagman-cmd $(optdefs)
 
 $(exe).texi         : texi-stamp

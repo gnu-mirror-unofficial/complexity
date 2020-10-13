@@ -21,17 +21,14 @@
 bin_PROGRAMS        = complexity
 bin_SCRIPTS         = cx-vs-mc
 option_def          = opts.def
-option_src          = $(option_def:.def=.c) $(option_def:.def=.h)
+option_src          = opts.c opts.h
 charmap_map         = char-types.map
 charmap_src         = $(charmap_map:.map=.h)
 gnulib              = $(top_builddir)/lib/libgnu.a
 
 complexity_SOURCES  = \
 	complexity.h complexity.c score.c tokenize.c \
-	$(charmap_src)
-nodist_complexity_SOURCES = $(option_src)
-BUILT_SOURCE        = $(option_src)
-$(complexity_OBJECTS) : $(BUILT_SOURCE)
+	$(charmap_src) $(option_src)
 
 complexity_CFLAGS   = $(ao_CFLAGS)
 complexity_LDADD    = $(ao_LIBS) $(gnulib) -lm
@@ -39,27 +36,6 @@ complexity_LDADD    = $(ao_LIBS) $(gnulib) -lm
 CLEANFILES          = *-stamp $(DEP_FILES) $(bin_SCRIPTS)
 EXTRA_DIST          = $(option_def) $(charmap_map) cx-vs-mc.sh
 DISTCLEANFILES      = $(option_src)
-
-if AMDEP
-if  AG_MF
-    OPT_DEP         = -MF$(DEPDIR)/opts-dep -MT$@
-    DEP_FILES       = $(DEPDIR)/opts-dep
--include $(DEPDIR)/opts-dep
-
-else
-    OPT_DEP         =
-endif
-else
-  OPT_DEP           =
-endif
-
-$(option_src)       : option-stamp
-option-stamp        : $(srcdir)/$(option_def)
-	top_srcdir=$(top_srcdir) \
-	    autogen $(OPT_DEP) $(srcdir)/$(option_def)
-
-$(charmap_src)      : $(charmap_map)
-	char-mapper $(srcdir)/$(charmap_map)
 
 cx-vs-mc            : cx-vs-mc.sh
 	@-rm -f $@
