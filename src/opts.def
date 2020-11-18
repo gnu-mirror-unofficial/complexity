@@ -40,7 +40,7 @@ copyright   = {
 
 version     = `
  ver_file=${top_srcdir:-..}/.tarball-version
- cat ${ver_file}`;
+ cat ${ver_file} || exit 1`;
 
 long-opts;
 die-code; no-return;

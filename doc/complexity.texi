@@ -1,0 +1,112 @@
+\input texinfo
+@ignore
+\internalpagesizes{46\baselineskip}{6in}{-.25in}{-.25in}{\bindingoffset}{36pt}%
+
+This file is part of gnu-pw-mgr.
+Copyright (C) 2013-2020 Bruce Korb, all rights reserved.
+This is free software. It is licensed for use, modification and
+redistribution under the terms of the GNU General Public License,
+version 3 or later <http://gnu.org/licenses/gpl.html>
+
+gnu-pw-mgr is free software: you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+gnu-pw-mgr is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along
+with this program.  If not, see <http://www.gnu.org/licenses/>.
+@end ignore
+@c %**start of header
+@include version.texi
+@include set-flags.texi
+
+@setfilename complexity.info
+@settitle @value{PKG-TITLE}
+@setchapternewpage off
+@syncodeindex pg cp
+@c %**end of header
+@copying
+This manual is for Complexity version @value{VERSION}, updated @value{UPDATED-MONTH}.
+
+Copyright @copyright{} @value{CRIGHT} by Bruce Korb.
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+@end quotation
+@end copying
+
+@dircategory Software development
+@direntry
+* Complexity: (@value{PROGRAM}).         @value{TITLE}.
+@end direntry
+
+@finalout
+@titlepage
+@title Complexity - @value{TITLE}
+@subtitle For version @value{VERSION}, updated @value{UPDATED-MONTH}
+@author Bruce Korb
+@author @email{@value{EMAIL}}
+
+@page
+@vskip 0pt plus 1filll
+Complexity copyright @copyright{} @value{CRIGHT} Bruce Korb
+
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+
+@node Top, Introduction, , (dir)
+@top @value{TITLE}
+@comment  node-name,  next,  previous,  up
+
+This file documents Complexity version @value{VERSION}.  It is a tool designed
+for analyzing the complexity of ``C'' program functions.  It is very similar
+to the McCabe scoring, but addresses several issues not considered in that
+scoring scheme.
+
+This edition documents version @value{VERSION}, updated @value{UPDATED-MONTH}
+
+@menu
+* Introduction::            Introduction
+* Complexity Computation::  Complexity Computation
+* Example Output::          Example Output
+* complexity Invocation::   Invoking complexity
+* Copying This Manual::     Copying This Manual
+* Concept Index::           General index
+@end menu
+
+@end ifnottex
+
+@include intro.texi
+@include compute.texi
+@include example.texi
+
+@page
+@include invoke-complexity.texi
+@page
+@node Copying This Manual
+@appendix Copying This Manual
+
+You may copy this manual under the terms of the FDL
+(@url{http://gnu.org/licenses/fdl.texi,the GNU Free Documentation License}).
+
+@cindex FDL, GNU Free Documentation License
+@include fdl.texi
+
+@page
+@node Concept Index
+@unnumbered Concept Index
+
+@printindex cp
+@bye

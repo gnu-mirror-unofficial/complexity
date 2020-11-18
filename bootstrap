@@ -227,7 +227,7 @@ vc_ignore=
 
 # Source required external libraries:
 # Set a version string for this script.
-scriptversion=2020-10-11.19; # UTC
+scriptversion=2019-02-19.15; # UTC
 
 # General shell script boiler plate, and helper functions.
 # Written by Gary V. Vaughan, 2004
@@ -293,9 +293,6 @@ do
 	  _G_safe_locale=\"$_G_var=C; \$_G_safe_locale\"
 	fi"
 done
-
-# CDPATH.
-(unset CDPATH) >/dev/null 2>&1 && unset CDPATH
 
 # Make sure IFS has a sensible default
 sp=' '
@@ -588,14 +585,21 @@ progname=`$ECHO "$progpath" |$SED "$sed_basename"`
 case $progpath in
   [\\/]*|[A-Za-z]:\\*) ;;
   *[\\/]*)
-    progdir=`$ECHO "$progpath" |$SED "$sed_dirname"`
-    progdir=`cd "$progdir" && pwd`
-    progpath=$progdir/$progname
-    ;;
+     progdir=`$ECHO "$progpath" |$SED "$sed_dirname"`
+     progdir=`cd "$progdir" && pwd`
+     progpath=$progdir/$progname
+     ;;
   *)
-    progdir=`pwd`
-    progpath=$progdir/$progname
-    ;;
+     _G_IFS=$IFS
+     IFS=${PATH_SEPARATOR-:}
+     for progdir in $PATH; do
+       IFS=$_G_IFS
+       test -x "$progdir/$progname" && break
+     done
+     IFS=$_G_IFS
+     test -n "$progdir" || progdir=`pwd`
+     progpath=$progdir/$progname
+     ;;
 esac
 
 
@@ -1643,7 +1647,7 @@ func_lt_ver ()
 
 # Local variables:
 # mode: shell-script
-# sh-indentation: 2
+# sh-indentation: 4
 # eval: (add-hook 'before-save-hook 'time-stamp)
 # time-stamp-pattern: "10/scriptversion=%:y-%02m-%02d.%02H; # UTC"
 # time-stamp-time-zone: "UTC"
@@ -2328,7 +2332,7 @@ func_version ()
 
 # Local variables:
 # mode: shell-script
-# sh-indentation: 2
+# sh-indentation: 4
 # eval: (add-hook 'before-save-hook 'time-stamp)
 # time-stamp-pattern: "30/scriptversion=%:y-%02m-%02d.%02H; # UTC"
 # time-stamp-time-zone: "UTC"
@@ -2814,7 +2818,7 @@ test extract-trace = "$progname" && func_main "$@"
 
 # Local variables:
 # mode: shell-script
-# sh-indentation: 2
+# sh-indentation: 4
 # eval: (add-hook 'before-save-hook 'time-stamp)
 # time-stamp-pattern: "50/scriptversion=%:y-%02m-%02d.%02H; # UTC"
 # time-stamp-time-zone: "UTC"

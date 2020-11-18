@@ -1,24 +1,37 @@
 # -*- Mode: shell-script -*-
 
+#  This file is part of gnu-pw-mgr.
+#
+#  Copyright (C) 2013-2018 Bruce Korb - all rights reserved
+#
+#  gnu-pw-mgr is free software: you can redistribute it and/or modify it
+#  under the terms of the GNU General Public License as published by the
+#  Free Software Foundation, either version 3 of the License, or
+#  (at your option) any later version.
+#
+#  gnu-pw-mgr is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+#
+#  You should have received a copy of the GNU General Public License along
+#  with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+prog=`basename "$0" .sh`
+program=`basename "$0"`
+progdir=`cd \`dirname "$0"\` >/dev/null && pwd -P`
+progpid=$$
+readonly prog program progdir progpid
+
 # death rattle
 #
 die()
 { 
-    echo "${progname} error:  $*"
+    echo "${prog} error:  $*"
     backtrace
     kill -TERM ${progpid}
     exit 1
 } >&2
-
-set_prog() {
-    progpid=$$
-    readonly progpid
-    builddir=$PWD
-    rm -rf m4 build-aux 2>/dev/null
-    mkdir m4 build-aux
-    cd ${progdir}
-    chmod a+x tests/*.test
-}
 
 # append_all_gnulib_includes
 # ---------------------------------------------
@@ -66,6 +79,7 @@ func_add_hook func_fini append_all_gnulib_includes
 # ---------------------------
 # Ensure `$all_gnulib_includes' contains a sorted uniquified list of
 # every gnulib mandated header file.
+#
 func_require_all_gnulib_includes ()
 {
     $debug_cmd
@@ -136,7 +150,11 @@ func_require_all_gnulib_modules ()
 
     require_all_gnulib_modules=:
 }
+
 require_all_gnulib_modules=func_require_all_gnulib_modules
+require_gnulib_merge_changelog=: # it requires gnulib's option processing
+require_gnulib_git_submodules=: # no submodules
+require_bootstrap_uptodate=: # we don't use gnulib's bootstrap
 
 # Leave here for anemic shells
 #
@@ -146,10 +164,7 @@ test "$BASH_VERSION" = "" && {
     return
 }
 
-{
-    shopts=' '$(echo $(set -o))' '
-    bashopts=' '$(echo $(shopt))' '
-} 2>/dev/null
+bashopts=' '$(exec 2>/dev/null ; echo $(shopt))' '
 
 # Specifically test for xtrace being set
 #

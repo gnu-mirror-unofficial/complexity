@@ -20,12 +20,12 @@
 exe                 = complexity
 man_MANS            = $(exe).1
 optdefs             = $(top_srcdir)/src/opts.def
-texi_tpl            = $(srcdir)/$(exe)-tpl.texi
+BUILT_SOURCES       =
 
 if AMDEP
 TXI_DEP_FILE        = $(DEPDIR)/info-dep
 TXI_DEP             = -MF$(TXI_DEP_FILE) -MT$@
-$(TXI_DEP_FILE)     : texi-stamp
+$(TXI_DEP_FILE)     : example.texi
 
 MAN_DEP_FILE        = $(DEPDIR)/man-dep
 MAN_DEP             = -MF$(MAN_DEP_FILE)  -MT$@
@@ -48,8 +48,10 @@ endif
 CLEANFILES          = *-stamp $(DEP_FILES) invoke-complexity.*
 TEXI2DVI_FLAGS      = --texinfo='@pagesizes 9.5in,7.0in'
 info_TEXINFOS       = $(exe).texi
-EXTRA_DIST          = $(exe)-tpl.texi fdl.texi intro.texi compute.texi \
-	gendocs_template invoke-$(exe).texi texi-stamp mk.sh
+EXAMPLE_FILES       = example.texi example-texi.tpl version.texi set-flags.texi
+BUILT_SOURCES      += example.texi version.texi set-flags.texi
+EXTRA_DIST          = $(EXAMPLE_FILES) fdl.texi intro.texi compute.texi \
+	gendocs_template invoke-$(exe).texi example.texi mk-texi.sh
 DISTCLEANFILES      = $(BUILT_SOURCES) $(man_MANS)
 
 $(man_MANS)         : $(optdefs) $(DEPDIR)
@@ -57,18 +59,21 @@ $(man_MANS)         : $(optdefs) $(DEPDIR)
 	top_builddir="$(top_builddir)" \
 	autogen $(MAN_DEP) -Tagman-cmd $(optdefs)
 
-$(exe).texi         : texi-stamp
 $(top_builddir)/src/complexity :
 
-texi-stamp          : $(optdefs) $(DEPDIR)
-	exe="$(exe)" texi_tpl="$(texi_tpl)" optdefs="$(optdefs)" \
-	TXI_DEP="$(TXI_DEP)" \
-	top_srcdir="$(top_srcdir)" \
-	top_builddir="$(top_builddir)" \
-	MAKE="$(MAKE)" $(SHELL) $(srcdir)/mk.sh $@
+example.texi        : $(optdefs) $(DEPDIR)
+	export exe="$(exe)" ; \
+	export optdefs="$(optdefs)" ; \
+	export TXI_DEP="$(TXI_DEP)" ; \
+	export top_srcdir="$(abs_top_srcdir)" ; \
+	export top_builddir="$(abs_top_builddir)" ; \
+	export MAKE="$(MAKE)" ; \
+	$(SHELL) $(abs_srcdir)/mk-texi.sh $@
 
-gnudocs             : $(srcdir)/gendocs_template texi-stamp
-	title=`sed -n 's/^@title  *//p' $(exe).texi` ; \
-	opts='--texi2html' ; \
-	$(SHELL) $(top_srcdir)/build-aux/gendocs.sh \
-	    $$opts complexity "$$title"
+# "gnudocs" always builds IN THE SOURCE DIRECTORY
+# Sometimes, write permission is turned off.
+# If so, then 
+gnudocs             : $(srcdir)/gendocs_template example.texi
+	export top_srcdir="$(abs_top_srcdir)" ; \
+	export top_builddir="$(abs_top_builddir)" ; \
+	$(SHELL) $(abs_srcdir)/mk-texi.sh $@
